@@ -1,15 +1,18 @@
-repeat wait() until game:IsLoaded() -- Đợi game tải xong
-wait(1) -- Đợi load dữ liệu đầy đủ
+repeat wait() until game:IsLoaded()
+wait(1)
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
-local StarterGui = game:GetService("StarterGui")
-local TweenService = game:GetService("TweenService") -- Dùng để bay mượt mà
 local LocalPlayer = Players.LocalPlayer
 
--- 🏴 **Chọn team Pirates trước khi hiển thị UI**
+-- 🔥 Tự động nhận diện executor
+local executor = identifyexecutor and identifyexecutor() or "Unknown"
+print("🔎 Đang chạy trên Executor: " .. executor)
+
+-- 🏴 Fix Join Team Pirates (Chắc chắn vào Team)
 local function selectPirateTeam()
     if LocalPlayer.Team and LocalPlayer.Team.Name == "Pirates" then
         return
@@ -19,59 +22,56 @@ local function selectPirateTeam()
     if remote then
         local teamSelect = remote:FindFirstChild("TeamSelect")
         if teamSelect then
-            teamSelect:InvokeServer("Pirates")
-            wait(2)
+            for attempt = 1, 10 do
+                if LocalPlayer.Team and LocalPlayer.Team.Name == "Pirates" then
+                    print("✅ Đã vào Team Pirates!")
+                    return
+                end
+
+                print("🔄 Thử vào Team Pirates... (Lần " .. attempt .. ")")
+                teamSelect:InvokeServer("Pirates")
+                wait(2)
+            end
         end
     end
+
+    warn("⚠️ Lỗi vào team! Đang reset nhân vật để thử lại...")
+    LocalPlayer.Character:BreakJoints()
+    wait(5)
+    selectPirateTeam()
 end
 
-selectPirateTeam() -- Chạy ngay khi game load xong
+selectPirateTeam() -- Chạy trước khi UI xuất hiện
 
--- 📌 **Tạo UI sau khi đã chọn team**
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Frame = Instance.new("Frame", ScreenGui)
-local Title = Instance.new("TextLabel", Frame)
-local Logo = Instance.new("ImageLabel", Frame)
-local FruitStatus = Instance.new("TextLabel", Frame) -- Trạng thái trái
-local TimerLabel = Instance.new("TextLabel", Frame) -- Bộ đếm 5 giây đổi server
+-- 🛡 Anti Ban (Plow Anti-Ban)
+local function antiBan()
+    if setfflag then
+        setfflag("HumanoidParallelRemoveNoPhysics", "False")
+        setfflag("HumanoidParallelRemoveNoPhysicsNoSimulate2", "False")
+        setfflag("CrashPadUploadToBacktraceToBacktraceBaseUrl", "")
+    end
 
-ScreenGui.Name = "PlowGameUI"
-Frame.Size = UDim2.new(0, 350, 0, 80)
-Frame.Position = UDim2.new(0.5, -175, 0.05, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Frame.BorderSizePixel = 2
-Frame.BackgroundTransparency = 0.2
+    if setscriptable then
+        setscriptable(game, "HttpGet", false)
+        setscriptable(game, "HttpPost", false)
+    end
 
-Title.Size = UDim2.new(1, -50, 0, 30)
-Title.Position = UDim2.new(0, 50, 0, 5)
-Title.Text = "Plow Game | Community"
-Title.TextScaled = true
-Title.TextColor3 = Color3.fromRGB(180, 100, 255)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.SourceSansBold
+    print("🛡 Anti Ban Đã Kích Hoạt!")
+end
 
-Logo.Size = UDim2.new(0, 40, 0, 40)
-Logo.Position = UDim2.new(0, 5, 0, 5)
-Logo.Image = "rbxassetid://100439996681560"
-Logo.BackgroundTransparency = 1
+antiBan()
 
-FruitStatus.Size = UDim2.new(1, -20, 0, 20)
-FruitStatus.Position = UDim2.new(0, 10, 0, 35)
-FruitStatus.Text = "Trạng thái: Đang kiểm tra..."
-FruitStatus.TextScaled = true
-FruitStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
-FruitStatus.BackgroundTransparency = 1
-FruitStatus.Font = Enum.Font.SourceSansBold
+-- 🎮 Hỗ trợ PE (Mobile Executor)
+if executor == "Fluxus" or executor == "Hydrogen" or executor == "Arceus X" then
+    getgenv = function() return _G end -- Fix lỗi KRNL/PE không có getgenv
+end
 
-TimerLabel.Size = UDim2.new(1, -20, 0, 20)
-TimerLabel.Position = UDim2.new(0, 10, 0, 55)
-TimerLabel.Text = "Hop server sau: 5 giây"
-TimerLabel.TextScaled = true
-TimerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-TimerLabel.BackgroundTransparency = 1
-TimerLabel.Font = Enum.Font.SourceSansBold
+-- 🚀 Giữ FPS ổn định cho Mobile & Low-End PC
+if setfpscap then
+    setfpscap(30) -- Giữ FPS ổn định
+end
 
--- 🍏 **Tìm Fruit gần nhất**
+-- 🔍 Tìm fruit gần nhất
 local function findNearestFruit()
     for _, fruit in pairs(Workspace:GetChildren()) do
         if fruit:IsA("Model") and fruit.Name:find("Fruit") and fruit:FindFirstChild("Handle") then
@@ -81,30 +81,32 @@ local function findNearestFruit()
     return nil
 end
 
--- 🚀 **Dùng TweenService để bay đến Fruit mượt mà**
-local function smoothTeleport(targetPosition)
-    local character = LocalPlayer.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        local rootPart = character.HumanoidRootPart
-        local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out) -- Bay mượt trong 2 giây
-        local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetPosition})
-        tween:Play()
-        wait(2.5) -- Đợi đảm bảo di chuyển hoàn tất
+-- 🚀 Tự động bay đến fruit bằng TweenService
+local function teleportToFruit(fruit)
+    if fruit and fruit:FindFirstChild("Handle") and LocalPlayer.Character then
+        local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if rootPart then
+            local goal = {CFrame = fruit.Handle.CFrame}
+            local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(rootPart, tweenInfo, goal)
+            tween:Play()
+            tween.Completed:Wait()
+        end
     end
 end
 
--- 🎒 **Lưu Fruit vào Inventory**
+-- 📦 Lưu trữ fruit vào inventory
 local function storeFruitInInventory(fruit)
     if fruit and fruit:FindFirstChild("Handle") then
         local args = {
             [1] = fruit.Name,
             [2] = fruit.Handle.Position
         }
-
+        
         local maxAttempts = 5
         local attempt = 0
         local success = false
-
+        
         while attempt < maxAttempts do
             local successCall, result = pcall(function()
                 return ReplicatedStorage.Remotes:FindFirstChild("StoreFruit"):InvokeServer(unpack(args))
@@ -125,31 +127,35 @@ local function storeFruitInInventory(fruit)
     return false
 end
 
--- 🔄 **Đổi server sau 5 giây**
+-- 🔄 Đổi server sau 5 giây nếu lưu fruit thành công
 local function switchServer()
     for i = 5, 1, -1 do
-        TimerLabel.Text = "Hop server sau: " .. i .. " giây"
+        print("🔄 Đổi server sau: " .. i .. " giây")
         wait(1)
     end
 
     TeleportService:Teleport(game.PlaceId, LocalPlayer)
 end
 
--- 🔍 **Tìm & Nhặt Fruit**
+-- 📌 Kiểm tra & Nhặt Fruit
 local function checkAndPickFruit()
     local fruit = findNearestFruit()
 
     if fruit then
-        FruitStatus.Text = "Trạng thái: Đã tìm thấy Fruit! " .. fruit.Name
-        smoothTeleport(fruit.Handle.CFrame) -- Bay đến fruit
+        print("✅ Đã Tìm Thấy Fruit! " .. fruit.Name)
+        teleportToFruit(fruit)
         wait(1)
-        if storeFruitInInventory(fruit) then
-            FruitStatus.Text = "Trạng thái: Fruit đã lưu vào inventory!"
+        local stored = storeFruitInInventory(fruit)
+        
+        if stored then
+            print("📦 Đã lưu trữ fruit vào kho!")
+            switchServer()
         else
-            FruitStatus.Text = "Trạng thái: Không thể lưu Fruit!"
+            print("⚠️ Không thể lưu trữ fruit! Đang tìm server mới...")
+            switchServer()
         end
     else
-        FruitStatus.Text = "Trạng thái: Không có Fruit!"
+        print("❌ Không có fruit!")
         switchServer()
     end
 end
