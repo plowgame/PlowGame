@@ -33,50 +33,42 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
--- 🖥️ Tạo UI
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 250, 0, 150)
-Frame.Position = UDim2.new(0.5, -125, 0.05, 0)
-Frame.BackgroundColor3 = Color3.new(0, 0, 0)
-Frame.BackgroundTransparency = 0.3
-Frame.BorderSizePixel = 2
-Frame.Active = true
+-- 🖥️ UI THÔNG BÁO (KIỂM TRA "Main" TRÁNH LỖI)
+local screenGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
+if not screenGui then
+    warn("⚠️ Không tìm thấy 'PlayerGui'!")
+    return
+end
 
--- 🌟 Tiêu đề Plow Game | Community
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0.25, 0)
-Title.TextScaled = true
-Title.TextColor3 = Color3.fromRGB(173, 216, 230) -- Xanh dương nhạt
-Title.BackgroundTransparency = 1
-Title.Text = "🌐 Plow Game | Community"
+local success, mainUI = pcall(function()
+    return screenGui:WaitForChild("Main", 5) -- Chờ tối đa 5 giây
+end)
 
--- 🌀 Tên Script
-local ScriptName = Instance.new("TextLabel", Frame)
-ScriptName.Size = UDim2.new(1, 0, 0.25, 0)
-ScriptName.Position = UDim2.new(0, 0, 0.25, 0)
-ScriptName.TextScaled = true
-ScriptName.TextColor3 = Color3.new(1, 1, 1) -- Trắng
-ScriptName.BackgroundTransparency = 1
-ScriptName.Text = "🌀 Plow Hub - Auto Fruit"
+if not success or not mainUI then
+    warn("⚠️ Không tìm thấy UI 'Main' sau 5 giây! Bỏ qua phần UI.")
+else
+    local Frame = Instance.new("Frame", mainUI)
+    Frame.Size = UDim2.new(0, 350, 0, 180)
+    Frame.Position = UDim2.new(0.5, -175, 0.05, 0)
+    Frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    Frame.BackgroundTransparency = 0.3
+    Frame.BorderSizePixel = 2
 
--- 📝 Thông báo trạng thái
-local StatusLabel = Instance.new("TextLabel", Frame)
-StatusLabel.Size = UDim2.new(1, 0, 0.3, 0)
-StatusLabel.Position = UDim2.new(0, 0, 0.5, 0)
-StatusLabel.TextScaled = true
-StatusLabel.TextColor3 = Color3.new(1, 1, 1)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size = UDim2.new(1, 0, 0.2, 0)
+    Title.TextScaled = true
+    Title.TextColor3 = Color3.fromRGB(173, 216, 230) -- Xanh dương nhạt
+    Title.BackgroundTransparency = 1
+    Title.Text = "🌐 Plow Game | Community"
 
--- 🚀 Trạng thái NoClip
-local NoClipLabel = Instance.new("TextLabel", Frame)
-NoClipLabel.Size = UDim2.new(1, 0, 0.2, 0)
-NoClipLabel.Position = UDim2.new(0, 0, 0.8, 0)
-NoClipLabel.TextScaled = true
-NoClipLabel.TextColor3 = Color3.new(0, 1, 0)
-NoClipLabel.BackgroundTransparency = 1
-NoClipLabel.Text = "✅ NoClip: ON"
+    local StatusLabel = Instance.new("TextLabel", Frame)
+    StatusLabel.Size = UDim2.new(1, 0, 0.2, 0)
+    StatusLabel.Position = UDim2.new(0, 0, 0.9, 0)
+    StatusLabel.TextScaled = true
+    StatusLabel.TextColor3 = Color3.new(1, 1, 1)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
+end
 
 -- 🔍 Tìm trái ác quỷ
 local function FindFruits()
@@ -90,14 +82,16 @@ end
 
 -- 📍 Dịch chuyển đến vị trí
 local function TeleportToPosition(position)
-    LocalPlayer.Character.HumanoidRootPart.CFrame = position
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = position
+    end
 end
 
 -- 🔄 Chuyển Server
 local function SwitchServer()
-    StatusLabel.Text = "🌐 Đang tìm server mới..."
+    print("🌐 Đang tìm server mới...")
     wait(2)
-    
+
     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100"))
     for _, server in pairs(servers.data) do
         if server.playing < server.maxPlayers then
@@ -111,21 +105,21 @@ end
 while true do
     local fruit = FindFruits()
     if fruit then
-        StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ! Đang nhặt..."
+        print("🍏 Đã tìm thấy trái ác quỷ! Đang nhặt...")
         TeleportToPosition(fruit.Handle.CFrame)
         wait(2)
-        
+
         local backpack = LocalPlayer.Backpack
         for _, item in pairs(backpack:GetChildren()) do
             if string.find(item.Name, "Fruit") then
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", item.Name)
-                StatusLabel.Text = "✅ Trái đã lưu trữ! Không còn trái nào."
+                print("✅ Trái đã lưu trữ! Không còn trái nào.")
                 wait(5)
                 SwitchServer()
             end
         end
     else
-        StatusLabel.Text = "❌ Không có trái ác quỷ! Chuyển server sau 5 giây..."
+        print("❌ Không có trái ác quỷ! Chuyển server sau 5 giây...")
         wait(5)
         SwitchServer()
     end
