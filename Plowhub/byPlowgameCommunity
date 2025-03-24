@@ -8,7 +8,7 @@ local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
 local LocalPlayer = Players.LocalPlayer
 
--- 🏴 Tự động chọn Hải Tặc nếu chưa có team
+-- Hihi
 local function selectPirateTeam()
     if LocalPlayer.Team == nil then
         local remote = ReplicatedStorage:FindFirstChild("Remotes")
@@ -21,7 +21,7 @@ end
 
 selectPirateTeam() -- Chạy chọn team ngay khi load game
 
--- 🎨 Tạo UI chính
+-- Hihi
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local Frame = Instance.new("Frame", ScreenGui)
 local Title = Instance.new("TextLabel", Frame)
@@ -36,7 +36,7 @@ Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Frame.BorderSizePixel = 2
 Frame.BackgroundTransparency = 0.2
 
--- 📌 Tiêu đề "Plow Game | Community"
+-- Hihi
 Title.Size = UDim2.new(1, -50, 0, 30)
 Title.Position = UDim2.new(0, 50, 0, 5)
 Title.Text = "Plow Game | Community"
@@ -45,13 +45,13 @@ Title.TextColor3 = Color3.fromRGB(180, 100, 255) -- Màu tím nhạt
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.SourceSansBold
 
--- 🎭 Logo PG
+-- Hihi
 Logo.Size = UDim2.new(0, 40, 0, 40)
 Logo.Position = UDim2.new(0, 5, 0, 5)
 Logo.Image = "rbxassetid://INSERT_LOGO_ID_HERE" -- Thay bằng ID ảnh logo PG
 Logo.BackgroundTransparency = 1
 
--- 🍏 Trạng thái Fruit
+-- Hihi
 FruitStatus.Size = UDim2.new(1, -20, 0, 20)
 FruitStatus.Position = UDim2.new(0, 10, 0, 35)
 FruitStatus.Text = "Trạng thái: Đang kiểm tra..."
@@ -60,7 +60,7 @@ FruitStatus.TextColor3 = Color3.fromRGB(255, 255, 0) -- Màu vàng
 FruitStatus.BackgroundTransparency = 1
 FruitStatus.Font = Enum.Font.SourceSansBold
 
--- ⏳ Bộ đếm 5 giây
+--Hihi
 TimerLabel.Size = UDim2.new(1, -20, 0, 20)
 TimerLabel.Position = UDim2.new(0, 10, 0, 55)
 TimerLabel.Text = "Đổi server sau: 5 giây"
@@ -117,9 +117,9 @@ local function storeFruitInInventory(fruit)
 end
 
 local function switchServer()
-    -- ⏳ Đếm ngược 5 giây trước khi đổi server
+    -- Hihi
     for i = 5, 1, -1 do
-        TimerLabel.Text = "Đổi server sau: " .. i .. " giây"
+        TimerLabel.Text = "Hop server sau: " .. i .. " giây"
         wait(1)
     end
 
