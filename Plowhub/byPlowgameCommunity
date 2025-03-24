@@ -1,27 +1,33 @@
-repeat wait() until game:IsLoaded()
-wait(2)
+repeat wait() until game:IsLoaded() -- Đợi game tải xong
+wait(1) -- Đợi load dữ liệu đầy đủ
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService") -- Dùng để bay mượt mà
 local LocalPlayer = Players.LocalPlayer
 
--- Hihi
+-- 🏴 **Chọn team Pirates trước khi hiển thị UI**
 local function selectPirateTeam()
-    if LocalPlayer.Team == nil then
-        local remote = ReplicatedStorage:FindFirstChild("Remotes")
-        if remote and remote:FindFirstChild("TeamSelect") then
-            remote.TeamSelect:InvokeServer("Pirates")
+    if LocalPlayer.Team and LocalPlayer.Team.Name == "Pirates" then
+        return
+    end
+
+    local remote = ReplicatedStorage:WaitForChild("Remotes", 5)
+    if remote then
+        local teamSelect = remote:FindFirstChild("TeamSelect")
+        if teamSelect then
+            teamSelect:InvokeServer("Pirates")
             wait(2)
         end
     end
 end
 
-selectPirateTeam() 
+selectPirateTeam() -- Chạy ngay khi game load xong
 
--- Hihi
+-- 📌 **Tạo UI sau khi đã chọn team**
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local Frame = Instance.new("Frame", ScreenGui)
 local Title = Instance.new("TextLabel", Frame)
@@ -36,39 +42,36 @@ Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Frame.BorderSizePixel = 2
 Frame.BackgroundTransparency = 0.2
 
--- Hihi
 Title.Size = UDim2.new(1, -50, 0, 30)
 Title.Position = UDim2.new(0, 50, 0, 5)
 Title.Text = "Plow Game | Community"
 Title.TextScaled = true
-Title.TextColor3 = Color3.fromRGB(180, 100, 255) 
+Title.TextColor3 = Color3.fromRGB(180, 100, 255)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.SourceSansBold
 
--- Hihi
 Logo.Size = UDim2.new(0, 40, 0, 40)
 Logo.Position = UDim2.new(0, 5, 0, 5)
-Logo.Image = "rbxassetid://100439996681560" 
+Logo.Image = "rbxassetid://100439996681560"
 Logo.BackgroundTransparency = 1
 
--- Hihi
 FruitStatus.Size = UDim2.new(1, -20, 0, 20)
 FruitStatus.Position = UDim2.new(0, 10, 0, 35)
 FruitStatus.Text = "Trạng thái: Đang kiểm tra..."
 FruitStatus.TextScaled = true
-FruitStatus.TextColor3 = Color3.fromRGB(0, 255, 0) 
+FruitStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
 FruitStatus.BackgroundTransparency = 1
 FruitStatus.Font = Enum.Font.SourceSansBold
 
---Hihi
 TimerLabel.Size = UDim2.new(1, -20, 0, 20)
 TimerLabel.Position = UDim2.new(0, 10, 0, 55)
 TimerLabel.Text = "Hop server sau: 5 giây"
 TimerLabel.TextScaled = true
-TimerLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Màu đỏ
+TimerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
 TimerLabel.BackgroundTransparency = 1
 TimerLabel.Font = Enum.Font.SourceSansBold
 
+-- 🍏 **Tìm Fruit gần nhất**
 local function findNearestFruit()
     for _, fruit in pairs(Workspace:GetChildren()) do
         if fruit:IsA("Model") and fruit.Name:find("Fruit") and fruit:FindFirstChild("Handle") then
@@ -78,24 +81,30 @@ local function findNearestFruit()
     return nil
 end
 
-local function teleportToFruit(fruit)
-    if fruit and fruit:FindFirstChild("Handle") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = fruit.Handle.CFrame
-        wait(1)
+-- 🚀 **Dùng TweenService để bay đến Fruit mượt mà**
+local function smoothTeleport(targetPosition)
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = character.HumanoidRootPart
+        local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out) -- Bay mượt trong 2 giây
+        local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetPosition})
+        tween:Play()
+        wait(2.5) -- Đợi đảm bảo di chuyển hoàn tất
     end
 end
 
+-- 🎒 **Lưu Fruit vào Inventory**
 local function storeFruitInInventory(fruit)
     if fruit and fruit:FindFirstChild("Handle") then
         local args = {
             [1] = fruit.Name,
             [2] = fruit.Handle.Position
         }
-        
+
         local maxAttempts = 5
         local attempt = 0
         local success = false
-        
+
         while attempt < maxAttempts do
             local successCall, result = pcall(function()
                 return ReplicatedStorage.Remotes:FindFirstChild("StoreFruit"):InvokeServer(unpack(args))
@@ -116,8 +125,8 @@ local function storeFruitInInventory(fruit)
     return false
 end
 
+-- 🔄 **Đổi server sau 5 giây**
 local function switchServer()
-    -- Hihi
     for i = 5, 1, -1 do
         TimerLabel.Text = "Hop server sau: " .. i .. " giây"
         wait(1)
@@ -126,14 +135,19 @@ local function switchServer()
     TeleportService:Teleport(game.PlaceId, LocalPlayer)
 end
 
+-- 🔍 **Tìm & Nhặt Fruit**
 local function checkAndPickFruit()
     local fruit = findNearestFruit()
 
     if fruit then
-        FruitStatus.Text = "Trạng thái: Đã Tìm Thấy Fruit! " .. fruit.Name
-        teleportToFruit(fruit)
+        FruitStatus.Text = "Trạng thái: Đã tìm thấy Fruit! " .. fruit.Name
+        smoothTeleport(fruit.Handle.CFrame) -- Bay đến fruit
         wait(1)
-        storeFruitInInventory(fruit)
+        if storeFruitInInventory(fruit) then
+            FruitStatus.Text = "Trạng thái: Fruit đã lưu vào inventory!"
+        else
+            FruitStatus.Text = "Trạng thái: Không thể lưu Fruit!"
+        end
     else
         FruitStatus.Text = "Trạng thái: Không có Fruit!"
         switchServer()
