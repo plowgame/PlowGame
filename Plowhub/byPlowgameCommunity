@@ -19,7 +19,7 @@ local function selectPirateTeam()
     end
 end
 
-selectPirateTeam() -- Chạy chọn team ngay khi load game
+selectPirateTeam() 
 
 -- Hihi
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
