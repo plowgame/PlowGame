@@ -41,14 +41,14 @@ Title.Size = UDim2.new(1, -50, 0, 30)
 Title.Position = UDim2.new(0, 50, 0, 5)
 Title.Text = "Plow Game | Community"
 Title.TextScaled = true
-Title.TextColor3 = Color3.fromRGB(180, 100, 255) -- Màu tím nhạt
+Title.TextColor3 = Color3.fromRGB(180, 100, 255) 
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.SourceSansBold
 
 -- Hihi
 Logo.Size = UDim2.new(0, 40, 0, 40)
 Logo.Position = UDim2.new(0, 5, 0, 5)
-Logo.Image = "rbxassetid://INSERT_LOGO_ID_HERE" -- Thay bằng ID ảnh logo PG
+Logo.Image = "rbxassetid://100439996681560" 
 Logo.BackgroundTransparency = 1
 
 -- Hihi
@@ -56,14 +56,14 @@ FruitStatus.Size = UDim2.new(1, -20, 0, 20)
 FruitStatus.Position = UDim2.new(0, 10, 0, 35)
 FruitStatus.Text = "Trạng thái: Đang kiểm tra..."
 FruitStatus.TextScaled = true
-FruitStatus.TextColor3 = Color3.fromRGB(255, 255, 0) -- Màu vàng
+FruitStatus.TextColor3 = Color3.fromRGB(0, 255, 0) 
 FruitStatus.BackgroundTransparency = 1
 FruitStatus.Font = Enum.Font.SourceSansBold
 
 --Hihi
 TimerLabel.Size = UDim2.new(1, -20, 0, 20)
 TimerLabel.Position = UDim2.new(0, 10, 0, 55)
-TimerLabel.Text = "Đổi server sau: 5 giây"
+TimerLabel.Text = "Hop server sau: 5 giây"
 TimerLabel.TextScaled = true
 TimerLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Màu đỏ
 TimerLabel.BackgroundTransparency = 1
@@ -130,12 +130,12 @@ local function checkAndPickFruit()
     local fruit = findNearestFruit()
 
     if fruit then
-        FruitStatus.Text = "Trạng thái: Tìm thấy trái " .. fruit.Name
+        FruitStatus.Text = "Trạng thái: Đã Tìm Thấy Fruit! " .. fruit.Name
         teleportToFruit(fruit)
         wait(1)
         storeFruitInInventory(fruit)
     else
-        FruitStatus.Text = "Trạng thái: Không có trái!"
+        FruitStatus.Text = "Trạng thái: Không có Fruit!"
         switchServer()
     end
 end
