@@ -5,10 +5,10 @@ local LocalPlayer = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
--- 🔄 Chặn AFK
+-- 🔄🍇 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -21,6 +21,57 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     wait(1)
     ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
+
+-- 📌 Tạo UI và hiển thị trên màn hình
+local function CreateUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "PlowHubUI"
+    screenGui.Parent = game.Players.LocalPlayer:FindFirstChild("PlayerGui") or game.CoreGui
+
+    local Frame = Instance.new("Frame", screenGui)
+    Frame.Size = UDim2.new(0, 300, 0, 150)
+    Frame.Position = UDim2.new(0.5, -150, 0.05, 0)
+    Frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    Frame.BackgroundTransparency = 0.3
+    Frame.BorderSizePixel = 2
+
+    -- 🌐 Tiêu đề UI
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size = UDim2.new(1, 0, 0.2, 0)
+    Title.TextScaled = true
+    Title.TextColor3 = Color3.fromRGB(173, 216, 230)
+    Title.BackgroundTransparency = 1
+    Title.Text = "🌐 Plow Game | Community"
+
+    -- 🔍 Trạng thái trái ác quỷ
+    local StatusLabel = Instance.new("TextLabel", Frame)
+    StatusLabel.Size = UDim2.new(1, 0, 0.4, 0)
+    StatusLabel.Position = UDim2.new(0, 0, 0.25, 0)
+    StatusLabel.TextSize = 18
+    StatusLabel.TextColor3 = Color3.new(1, 1, 1)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
+
+    -- 🎯 FPS Counter
+    local FpsLabel = Instance.new("TextLabel", Frame)
+    FpsLabel.Size = UDim2.new(1, 0, 0.15, 0)
+    FpsLabel.Position = UDim2.new(0, 0, 0.8, 0)
+    FpsLabel.TextSize = 16
+    FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    FpsLabel.BackgroundTransparency = 1
+    FpsLabel.Text = "FPS: 60"
+
+    -- 🎯 Cập nhật FPS theo thời gian thực
+    RunService.RenderStepped:Connect(function()
+        local fps = math.floor(1 / RunService.RenderStepped:Wait())
+        FpsLabel.Text = "FPS: " .. fps
+    end)
+
+    return StatusLabel
+end
+
+-- 📌 Khởi tạo UI
+local StatusLabel = CreateUI()
 
 -- 🔍 Tìm trái ác quỷ nhanh hơn
 local function FindFruits()
@@ -42,13 +93,12 @@ end
 -- ✅ Lưu trữ trái vào kho
 local function StoreFruit(fruitName)
     ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
-    print("✅ Đã lưu trữ: " .. fruitName)
+    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
 end
 
 -- 🌐 **Tìm Server có trái ác quỷ nhanh hơn**
 local function FastFindServerWithFruit()
-    print("🔍 Đang tìm server có trái ác quỷ...")
-    
+    StatusLabel.Text = "🔍 Đang tìm server có trái ác quỷ..."
     local bestServer = nil
     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
 
@@ -60,7 +110,7 @@ local function FastFindServerWithFruit()
             end)
             
             if success and response then
-                if response.hasFruit then -- 🔥 Kiểm tra nhanh nếu server có fruit
+                if response.hasFruit then
                     bestServer = server.id
                     break
                 end
@@ -69,10 +119,10 @@ local function FastFindServerWithFruit()
     end
 
     if bestServer then
-        print("🍏 Server có trái! Đang vào...")
+        StatusLabel.Text = "🍏 Server có trái! Đang vào..."
         TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer, LocalPlayer)
     else
-        print("🚫 Không tìm thấy server có trái! Thử lại sau.")
+        StatusLabel.Text = "🚫 Không tìm thấy server có trái!"
     end
 end
 
@@ -80,7 +130,7 @@ end
 while true do
     local fruit = FindFruits()
     if fruit then
-        print("🍏 Đã tìm thấy trái ác quỷ! Đang nhặt...")
+        StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ!"
         TeleportToPosition(fruit.Handle.CFrame)
         wait(1)
 
@@ -93,7 +143,7 @@ while true do
         wait(3)
         FastFindServerWithFruit()
     else
-        print("❌ Không có trái ác quỷ! Tìm server nhanh hơn...")
+        StatusLabel.Text = "❌ Không có trái! Đang tìm server có fruit..."
         FastFindServerWithFruit()
     end
 end
