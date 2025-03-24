@@ -6,6 +6,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- 🔄 Chặn AFK
 LocalPlayer.Idled:Connect(function()
@@ -28,18 +29,18 @@ end)
 -- 🏴 Tự động chọn Hải Tặc khi vào game
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
-    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
+    ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
     wait(1)
-    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TeleportToSpawn")
+    ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
--- 🖥️ UI NHỎ GỌN + HIỂN THỊ FPS
+-- 🖥️ UI
 local screenGui = Instance.new("ScreenGui", LocalPlayer:FindFirstChild("PlayerGui"))
 screenGui.Name = "PlowHubUI"
 
 local Frame = Instance.new("Frame", screenGui)
-Frame.Size = UDim2.new(0, 200, 0, 100) -- 📏 Nhỏ gọn
-Frame.Position = UDim2.new(0.5, -100, 0.05, 0)
+Frame.Size = UDim2.new(0, 250, 0, 130)
+Frame.Position = UDim2.new(0.5, -125, 0.05, 0)
 Frame.BackgroundColor3 = Color3.new(0, 0, 0)
 Frame.BackgroundTransparency = 0.4
 Frame.BorderSizePixel = 2
@@ -47,24 +48,25 @@ Frame.BorderSizePixel = 2
 local Title = Instance.new("TextLabel", Frame)
 Title.Size = UDim2.new(1, 0, 0.2, 0)
 Title.TextScaled = true
-Title.TextColor3 = Color3.fromRGB(173, 216, 230) -- Xanh dương nhạt
+Title.TextColor3 = Color3.fromRGB(173, 216, 230)
 Title.BackgroundTransparency = 1
 Title.Text = "🌐 Plow Game | Community"
 
+-- 🔎 Trạng thái trái ác quỷ
 local StatusLabel = Instance.new("TextLabel", Frame)
 StatusLabel.Size = UDim2.new(1, 0, 0.4, 0)
-StatusLabel.Position = UDim2.new(0, 0, 0.2, 0)
-StatusLabel.TextScaled = true
+StatusLabel.Position = UDim2.new(0, 0, 0.25, 0)
+StatusLabel.TextSize = 18
 StatusLabel.TextColor3 = Color3.new(1, 1, 1)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
 
 -- 🖥️ FPS Counter
 local FpsLabel = Instance.new("TextLabel", Frame)
-FpsLabel.Size = UDim2.new(1, 0, 0.2, 0)
-FpsLabel.Position = UDim2.new(0, 0, 0.7, 0)
-FpsLabel.TextScaled = true
-FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Xanh lá
+FpsLabel.Size = UDim2.new(1, 0, 0.15, 0)
+FpsLabel.Position = UDim2.new(0, 0, 0.8, 0)
+FpsLabel.TextSize = 16
+FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 FpsLabel.BackgroundTransparency = 1
 FpsLabel.Text = "FPS: 60"
 
@@ -74,7 +76,7 @@ RunService.RenderStepped:Connect(function()
     FpsLabel.Text = "FPS: " .. fps
 end)
 
--- 🔍 Kiểm tra trái ác quỷ trong game
+-- 🔍 Kiểm tra trái ác quỷ
 local function FindFruits()
     for _, fruit in pairs(game.Workspace:GetChildren()) do
         if fruit:IsA("Tool") and string.find(fruit.Name, "Fruit") then
@@ -84,18 +86,18 @@ local function FindFruits()
     return nil
 end
 
--- 📍 Dịch chuyển đến vị trí
+-- 📍 Dịch chuyển
 local function TeleportToPosition(position)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = position
     end
 end
 
--- 🔄 Chuyển Server ít người chơi
+-- 🔄 Chuyển server
 local function SwitchServer()
     print("🌐 Đang tìm server mới...")
     wait(2)
-
+    
     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100"))
     for _, server in pairs(servers.data) do
         if server.playing < server.maxPlayers then
@@ -105,6 +107,13 @@ local function SwitchServer()
     end
 end
 
+-- ✅ Lưu trữ trái vào kho
+local function StoreFruit(fruitName)
+    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+    print("✅ Đã lưu trữ: " .. fruitName)
+    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+end
+
 -- 🔁 Vòng lặp kiểm tra & nhặt trái
 while true do
     local fruit = FindFruits()
@@ -112,18 +121,16 @@ while true do
         print("🍏 Đã tìm thấy trái ác quỷ! Đang nhặt...")
         StatusLabel.Text = "🍏 Tìm thấy trái ác quỷ!"
         TeleportToPosition(fruit.Handle.CFrame)
-        wait(2)
+        wait(1)
 
-        local backpack = LocalPlayer.Backpack
-        for _, item in pairs(backpack:GetChildren()) do
-            if string.find(item.Name, "Fruit") then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", item.Name)
-                print("✅ Trái đã lưu trữ! Không còn trái nào.")
-                StatusLabel.Text = "✅ Đã lưu trữ trái!"
-                wait(5)
-                SwitchServer()
-            end
-        end
+        -- 🏆 Nhặt trái & lưu vào kho
+        LocalPlayer.Character.Humanoid:EquipTool(fruit) -- 🔥 Cầm lên trước khi lưu
+        wait(1)
+        StoreFruit(fruit.Name)
+
+        -- ⏳ Chờ rồi đổi server
+        wait(5)
+        SwitchServer()
     else
         print("❌ Không có trái ác quỷ! Chuyển server sau 5 giây...")
         StatusLabel.Text = "❌ Không có trái nào!"
