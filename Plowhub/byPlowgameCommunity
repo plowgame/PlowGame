@@ -14,18 +14,6 @@ LocalPlayer.Idled:Connect(function()
     VirtualUser:ClickButton2(Vector2.new())
 end)
 
--- 🔥 Kích hoạt NoClip (đi xuyên tường)
-local NoClip = true
-RunService.Stepped:Connect(function()
-    if NoClip and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetChildren()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
-            end
-        end
-    end
-end)
-
 -- 🏴 Tự động chọn Hải Tặc khi vào game
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
@@ -34,49 +22,7 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
--- 🖥️ UI
-local screenGui = Instance.new("ScreenGui", LocalPlayer:FindFirstChild("PlayerGui"))
-screenGui.Name = "PlowHubUI"
-
-local Frame = Instance.new("Frame", screenGui)
-Frame.Size = UDim2.new(0, 250, 0, 130)
-Frame.Position = UDim2.new(0.5, -125, 0.05, 0)
-Frame.BackgroundColor3 = Color3.new(0, 0, 0)
-Frame.BackgroundTransparency = 0.4
-Frame.BorderSizePixel = 2
-
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0.2, 0)
-Title.TextScaled = true
-Title.TextColor3 = Color3.fromRGB(173, 216, 230)
-Title.BackgroundTransparency = 1
-Title.Text = "🌐 Plow Game | Community"
-
--- 🔎 Trạng thái trái ác quỷ
-local StatusLabel = Instance.new("TextLabel", Frame)
-StatusLabel.Size = UDim2.new(1, 0, 0.4, 0)
-StatusLabel.Position = UDim2.new(0, 0, 0.25, 0)
-StatusLabel.TextSize = 18
-StatusLabel.TextColor3 = Color3.new(1, 1, 1)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
-
--- 🖥️ FPS Counter
-local FpsLabel = Instance.new("TextLabel", Frame)
-FpsLabel.Size = UDim2.new(1, 0, 0.15, 0)
-FpsLabel.Position = UDim2.new(0, 0, 0.8, 0)
-FpsLabel.TextSize = 16
-FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-FpsLabel.BackgroundTransparency = 1
-FpsLabel.Text = "FPS: 60"
-
--- 🎯 Cập nhật FPS theo thời gian thực
-RunService.RenderStepped:Connect(function()
-    local fps = math.floor(1 / RunService.RenderStepped:Wait())
-    FpsLabel.Text = "FPS: " .. fps
-end)
-
--- 🔍 Kiểm tra trái ác quỷ
+-- 🔍 Tìm trái ác quỷ nhanh hơn
 local function FindFruits()
     for _, fruit in pairs(game.Workspace:GetChildren()) do
         if fruit:IsA("Tool") and string.find(fruit.Name, "Fruit") then
@@ -86,24 +32,10 @@ local function FindFruits()
     return nil
 end
 
--- 📍 Dịch chuyển
+-- 📍 Dịch chuyển đến trái
 local function TeleportToPosition(position)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = position
-    end
-end
-
--- 🔄 Chuyển server
-local function SwitchServer()
-    print("🌐 Đang tìm server mới...")
-    wait(2)
-    
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100"))
-    for _, server in pairs(servers.data) do
-        if server.playing < server.maxPlayers then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
-            return
-        end
     end
 end
 
@@ -111,30 +43,57 @@ end
 local function StoreFruit(fruitName)
     ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
     print("✅ Đã lưu trữ: " .. fruitName)
-    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
 end
 
--- 🔁 Vòng lặp kiểm tra & nhặt trái
+-- 🌐 **Tìm Server có trái ác quỷ nhanh hơn**
+local function FastFindServerWithFruit()
+    print("🔍 Đang tìm server có trái ác quỷ...")
+    
+    local bestServer = nil
+    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
+
+    for _, server in ipairs(servers) do
+        if server.playing < server.maxPlayers then
+            print("🛠️ Kiểm tra nhanh server: " .. server.id)
+            local success, response = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public/" .. server.id))
+            end)
+            
+            if success and response then
+                if response.hasFruit then -- 🔥 Kiểm tra nhanh nếu server có fruit
+                    bestServer = server.id
+                    break
+                end
+            end
+        end
+    end
+
+    if bestServer then
+        print("🍏 Server có trái! Đang vào...")
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer, LocalPlayer)
+    else
+        print("🚫 Không tìm thấy server có trái! Thử lại sau.")
+    end
+end
+
+-- 🔁 **Tăng tốc tìm & nhặt trái**
 while true do
     local fruit = FindFruits()
     if fruit then
         print("🍏 Đã tìm thấy trái ác quỷ! Đang nhặt...")
-        StatusLabel.Text = "🍏 Tìm thấy trái ác quỷ!"
         TeleportToPosition(fruit.Handle.CFrame)
         wait(1)
 
         -- 🏆 Nhặt trái & lưu vào kho
-        LocalPlayer.Character.Humanoid:EquipTool(fruit) -- 🔥 Cầm lên trước khi lưu
+        LocalPlayer.Character.Humanoid:EquipTool(fruit)
         wait(1)
         StoreFruit(fruit.Name)
 
-        -- ⏳ Chờ rồi đổi server
-        wait(5)
-        SwitchServer()
+        -- ⏳ Chuyển server mới nhanh hơn
+        wait(3)
+        FastFindServerWithFruit()
     else
-        print("❌ Không có trái ác quỷ! Chuyển server sau 5 giây...")
-        StatusLabel.Text = "❌ Không có trái nào!"
-        wait(5)
-        SwitchServer()
+        print("❌ Không có trái ác quỷ! Tìm server nhanh hơn...")
+        FastFindServerWithFruit()
     end
 end
