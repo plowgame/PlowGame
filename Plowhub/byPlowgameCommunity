@@ -33,42 +33,31 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
--- 🖥️ UI THÔNG BÁO (KIỂM TRA "Main" TRÁNH LỖI)
-local screenGui = Players.LocalPlayer:FindFirstChild("PlayerGui")
-if not screenGui then
-    warn("⚠️ Không tìm thấy 'PlayerGui'!")
-    return
-end
+-- 🖥️ UI THÔNG BÁO (NHỎ GỌN)
+local screenGui = Instance.new("ScreenGui", LocalPlayer:FindFirstChild("PlayerGui"))
+screenGui.Name = "PlowHubUI"
 
-local success, mainUI = pcall(function()
-    return screenGui:WaitForChild("Main", 5) -- Chờ tối đa 5 giây
-end)
+local Frame = Instance.new("Frame", screenGui)
+Frame.Size = UDim2.new(0, 250, 0, 100) -- 📏 Nhỏ hơn
+Frame.Position = UDim2.new(0.5, -125, 0.05, 0)
+Frame.BackgroundColor3 = Color3.new(0, 0, 0)
+Frame.BackgroundTransparency = 0.4
+Frame.BorderSizePixel = 2
 
-if not success or not mainUI then
-    warn("⚠️ Không tìm thấy UI 'Main' sau 5 giây! Bỏ qua phần UI.")
-else
-    local Frame = Instance.new("Frame", mainUI)
-    Frame.Size = UDim2.new(0, 350, 0, 180)
-    Frame.Position = UDim2.new(0.5, -175, 0.05, 0)
-    Frame.BackgroundColor3 = Color3.new(0, 0, 0)
-    Frame.BackgroundTransparency = 0.3
-    Frame.BorderSizePixel = 2
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(1, 0, 0.3, 0)
+Title.TextScaled = true
+Title.TextColor3 = Color3.fromRGB(173, 216, 230) -- Xanh dương nhạt
+Title.BackgroundTransparency = 1
+Title.Text = "🌐 Plow Game | Community"
 
-    local Title = Instance.new("TextLabel", Frame)
-    Title.Size = UDim2.new(1, 0, 0.2, 0)
-    Title.TextScaled = true
-    Title.TextColor3 = Color3.fromRGB(173, 216, 230) -- Xanh dương nhạt
-    Title.BackgroundTransparency = 1
-    Title.Text = "🌐 Plow Game | Community"
-
-    local StatusLabel = Instance.new("TextLabel", Frame)
-    StatusLabel.Size = UDim2.new(1, 0, 0.2, 0)
-    StatusLabel.Position = UDim2.new(0, 0, 0.9, 0)
-    StatusLabel.TextScaled = true
-    StatusLabel.TextColor3 = Color3.new(1, 1, 1)
-    StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
-end
+local StatusLabel = Instance.new("TextLabel", Frame)
+StatusLabel.Size = UDim2.new(1, 0, 0.5, 0)
+StatusLabel.Position = UDim2.new(0, 0, 0.5, 0)
+StatusLabel.TextScaled = true
+StatusLabel.TextColor3 = Color3.new(1, 1, 1)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
 
 -- 🔍 Tìm trái ác quỷ
 local function FindFruits()
@@ -106,6 +95,7 @@ while true do
     local fruit = FindFruits()
     if fruit then
         print("🍏 Đã tìm thấy trái ác quỷ! Đang nhặt...")
+        StatusLabel.Text = "🍏 Tìm thấy trái ác quỷ!"
         TeleportToPosition(fruit.Handle.CFrame)
         wait(2)
 
@@ -114,12 +104,14 @@ while true do
             if string.find(item.Name, "Fruit") then
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", item.Name)
                 print("✅ Trái đã lưu trữ! Không còn trái nào.")
+                StatusLabel.Text = "✅ Đã lưu trữ trái!"
                 wait(5)
                 SwitchServer()
             end
         end
     else
         print("❌ Không có trái ác quỷ! Chuyển server sau 5 giây...")
+        StatusLabel.Text = "❌ Không có trái nào!"
         wait(5)
         SwitchServer()
     end
