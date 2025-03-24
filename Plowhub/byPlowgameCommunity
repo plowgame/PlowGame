@@ -25,7 +25,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- 🏴 Tự chọn Hải Tặc khi vào game
+-- 🏴 Tự động chọn Hải Tặc khi vào game
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(unpack(args))
@@ -33,33 +33,48 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
--- 🖥️ UI THÔNG BÁO (NHỎ GỌN)
+-- 🖥️ UI NHỎ GỌN + HIỂN THỊ FPS
 local screenGui = Instance.new("ScreenGui", LocalPlayer:FindFirstChild("PlayerGui"))
 screenGui.Name = "PlowHubUI"
 
 local Frame = Instance.new("Frame", screenGui)
-Frame.Size = UDim2.new(0, 250, 0, 100) -- 📏 Nhỏ hơn
-Frame.Position = UDim2.new(0.5, -125, 0.05, 0)
+Frame.Size = UDim2.new(0, 200, 0, 100) -- 📏 Nhỏ gọn
+Frame.Position = UDim2.new(0.5, -100, 0.05, 0)
 Frame.BackgroundColor3 = Color3.new(0, 0, 0)
 Frame.BackgroundTransparency = 0.4
 Frame.BorderSizePixel = 2
 
 local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0.3, 0)
+Title.Size = UDim2.new(1, 0, 0.2, 0)
 Title.TextScaled = true
 Title.TextColor3 = Color3.fromRGB(173, 216, 230) -- Xanh dương nhạt
 Title.BackgroundTransparency = 1
 Title.Text = "🌐 Plow Game | Community"
 
 local StatusLabel = Instance.new("TextLabel", Frame)
-StatusLabel.Size = UDim2.new(1, 0, 0.5, 0)
-StatusLabel.Position = UDim2.new(0, 0, 0.5, 0)
+StatusLabel.Size = UDim2.new(1, 0, 0.4, 0)
+StatusLabel.Position = UDim2.new(0, 0, 0.2, 0)
 StatusLabel.TextScaled = true
 StatusLabel.TextColor3 = Color3.new(1, 1, 1)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
 
--- 🔍 Tìm trái ác quỷ
+-- 🖥️ FPS Counter
+local FpsLabel = Instance.new("TextLabel", Frame)
+FpsLabel.Size = UDim2.new(1, 0, 0.2, 0)
+FpsLabel.Position = UDim2.new(0, 0, 0.7, 0)
+FpsLabel.TextScaled = true
+FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- Xanh lá
+FpsLabel.BackgroundTransparency = 1
+FpsLabel.Text = "FPS: 60"
+
+-- 🎯 Cập nhật FPS theo thời gian thực
+RunService.RenderStepped:Connect(function()
+    local fps = math.floor(1 / RunService.RenderStepped:Wait())
+    FpsLabel.Text = "FPS: " .. fps
+end)
+
+-- 🔍 Kiểm tra trái ác quỷ trong game
 local function FindFruits()
     for _, fruit in pairs(game.Workspace:GetChildren()) do
         if fruit:IsA("Tool") and string.find(fruit.Name, "Fruit") then
@@ -76,7 +91,7 @@ local function TeleportToPosition(position)
     end
 end
 
--- 🔄 Chuyển Server
+-- 🔄 Chuyển Server ít người chơi
 local function SwitchServer()
     print("🌐 Đang tìm server mới...")
     wait(2)
@@ -90,7 +105,7 @@ local function SwitchServer()
     end
 end
 
--- 🔁 Vòng lặp kiểm tra và nhặt trái
+-- 🔁 Vòng lặp kiểm tra & nhặt trái
 while true do
     local fruit = FindFruits()
     if fruit then
