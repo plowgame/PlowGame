@@ -1,3 +1,12 @@
+-- Khai báo dịch vụ
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
 -- 🔄 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
@@ -7,9 +16,13 @@ end)
 -- 🏴 Tự động chọn Hải Tặc khi vào game
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
-    ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+    end)
     wait(1)
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
+    end)
 end
 
 -- 📌 Tạo UI hiển thị trên màn hình
@@ -87,7 +100,6 @@ end
 
 -- ✅ Lưu trữ trái vào kho
 local function StoreFruit(fruitName)
-    -- Đảm bảo gọi đúng Remote để lưu trữ trái vào kho
     local success, errorMsg = pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
     end)
@@ -107,16 +119,22 @@ local function ServerHopWithCountdown()
         wait(1)
     end
     StatusLabel.Text = "🔁 Đang chuyển server..."
-    
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
-    for _, server in ipairs(servers) do
-        if server.playing < server.maxPlayers then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
-            return
-        end
-    end
 
-    StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
+    local success, errorMsg = pcall(function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
+        for _, server in ipairs(servers) do
+            if server.playing < server.maxPlayers then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+                return
+            end
+        end
+    end)
+
+    if not success then
+        StatusLabel.Text = "❌ Lỗi khi chuyển server: " .. errorMsg
+    else
+        StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
+    end
 end
 
 -- 🔁 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
