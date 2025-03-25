@@ -1,4 +1,3 @@
--- Kiểm tra khi game đã load xong
 repeat wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
@@ -14,7 +13,7 @@ local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
 
--- 🔄 Chặn AFK
+-- 🔄🍓 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     if isKRNL then
         VirtualUser:CaptureController()
@@ -44,7 +43,7 @@ local function CreateUI()
     screenGui.Parent = game.Players.LocalPlayer:FindFirstChild("PlayerGui") or game.CoreGui
 
     local Frame = Instance.new("Frame", screenGui)
-    Frame.Size = UDim2.new(0, 320, 0, 200)  -- Tăng chiều cao một chút
+    Frame.Size = UDim2.new(0, 320, 0, 250)  -- Tăng chiều cao một chút
     Frame.Position = UDim2.new(0.5, -160, 0.05, 0)
     Frame.BackgroundColor3 = Color3.new(0, 0, 0)
     Frame.BackgroundTransparency = 0.3
@@ -84,17 +83,26 @@ local function CreateUI()
     FpsLabel.BackgroundTransparency = 1
     FpsLabel.Text = "FPS: 60"
 
+    -- 🎯 Bộ đếm thời gian 5 giây
+    local TimerLabel = Instance.new("TextLabel", Frame)
+    TimerLabel.Size = UDim2.new(1, 0, 0.15, 0)
+    TimerLabel.Position = UDim2.new(0, 0, 0.9, 0)
+    TimerLabel.TextSize = 16
+    TimerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    TimerLabel.BackgroundTransparency = 1
+    TimerLabel.Text = "Thời gian: 5s"
+
     -- 🎯 Cập nhật FPS theo thời gian thực
     RunService.RenderStepped:Connect(function()
         local fps = math.floor(1 / RunService.RenderStepped:Wait())
         FpsLabel.Text = "FPS: " .. fps
     end)
 
-    return StatusLabel
+    return StatusLabel, TimerLabel
 end
 
 -- 📌 Khởi tạo UI
-local StatusLabel = CreateUI()
+local StatusLabel, TimerLabel = CreateUI()
 
 -- 📍 Dịch chuyển đến trái
 local function TeleportToPosition(position)
@@ -140,7 +148,16 @@ while true do
         StoreFruit(fruit.Name)
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
-        ServerHopWithCountdown()
+        -- Bộ đếm thời gian 5 giây
+        local countdown = 5
+        while countdown > 0 do
+            TimerLabel.Text = "Thời gian: " .. countdown .. "s"
+            wait(1)
+            countdown = countdown - 1
+        end
+        -- Sau khi đếm xong, thực hiện chuyển server
+        -- Thêm logic chuyển server vào đây (ví dụ: Server Hop)
+        wait(5) -- Chờ 5 giây trước khi thử lại
     end
 
     wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
