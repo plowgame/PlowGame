@@ -14,7 +14,7 @@ local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
 
--- 🔄🏋🏻‍♀️ Chặn AFK
+-- 🔄 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     if isKRNL then
         VirtualUser:CaptureController()
@@ -126,70 +126,22 @@ local function StoreFruit(fruitName)
     end
 end
 
--- 🌐 **Cải tiến Server Hop với bộ lọc và hiệu suất cao hơn**
-local function ServerHopWithImprovedLogic()
-    local attempts = 0
-    local maxAttempts = 5 -- Tối đa 5 lần thử
+-- 🌐 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
+while true do
+    local fruit = FindFruits()
+    if fruit then
+        StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ!"
+        TeleportToPosition(fruit.Handle.CFrame)
+        wait(1)
 
-    while attempts < maxAttempts do
-        attempts = attempts + 1
-        StatusLabel.Text = "🔄 Đang tìm server... (Lần thử: " .. attempts .. ")"
-
-        local success, response = pcall(function()
-            return game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")
-        end)
-
-        if not success then
-            StatusLabel.Text = "❌ Không thể lấy thông tin server. Thử lại sau..."
-            return
-        end
-
-        local servers = HttpService:JSONDecode(response).data
-        local viableServers = {}
-
-        -- Lọc các server có ít người chơi và không đầy
-        for _, server in ipairs(servers) do
-            if server.playing < server.maxPlayers then
-                table.insert(viableServers, server)
-            end
-        end
-
-        -- Nếu tìm thấy server khả dụng
-        if #viableServers > 0 then
-            local chosenServer = viableServers[math.random(1, #viableServers)] -- Chọn server ngẫu nhiên từ danh sách khả dụng
-            StatusLabel.Text = "🔁 Đang chuyển đến server mới..."
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, chosenServer.id, LocalPlayer)
-            return
-        else
-            StatusLabel.Text = "❌ Không tìm thấy server khả dụng. Thử lại..."
-            wait(3) -- Thử lại sau 3 giây
-        end
-    end
-
-    -- Nếu sau khi thử hết các lần mà không thành công
-    StatusLabel.Text = "❌ Không thể tìm thấy server sau " .. maxAttempts .. " lần thử!"
-end
-
--- 🌐 **Tự động tham gia server công khai**
-local function AutoJoinServer()
-    StatusLabel.Text = "🔄 Tìm server công khai để tham gia..."
-    
-    local success, response = pcall(function()
-        return game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=10")
-    end)
-
-    if success then
-        local servers = HttpService:JSONDecode(response).data
-        if #servers > 0 then
-            local server = servers[math.random(1, #servers)] -- Chọn ngẫu nhiên server trong danh sách
-            StatusLabel.Text = "🔁 Đang tham gia server..."
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
-        else
-            StatusLabel.Text = "❌ Không tìm thấy server công khai!"
-        end
+        -- 🏆 Nhặt trái & lưu vào kho
+        LocalPlayer.Character.Humanoid:EquipTool(fruit)
+        wait(1)
+        StoreFruit(fruit.Name)
     else
-        StatusLabel.Text = "❌ Không thể lấy danh sách server!"
+        StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
+        ServerHopWithCountdown()
     end
-end
 
--- 🔁 **Tìm & nhặt trái, sau đó tự động
+    wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
+end
