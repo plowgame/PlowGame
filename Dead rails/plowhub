@@ -1,31 +1,41 @@
+-- Tải thư viện Tora Library
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/liebertsx/Tora-Library/main/src/librarynew", true))()
+
 local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local humanoid = character:WaitForChild("Humanoid")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
--- Bypass To End function
-local function bypassToEnd()
-    if not humanoidRootPart or not humanoid then return end
-
-    -- Bypass Anti-Cheat trước khi teleport
-    humanoidRootPart.Anchored = true  -- Ngăn game kiểm tra di chuyển bất thường
-    humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)  -- Chống lỗi ragdoll hoặc bug vật lý
-    wait(0.1)
-
-    -- Kiểm tra lại trước khi teleport để tránh lỗi game
-    if humanoidRootPart.Parent then
-        humanoidRootPart.CFrame = CFrame.new(-346, -69, -49060) -- Điểm cuối của teleport
-    end
-    wait(0.1)
-
-    -- Khôi phục lại trạng thái nhân vật
-    humanoidRootPart.Anchored = false
-    humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, true)  -- Bật lại trạng thái vật lý
+local function sendNotification(title, text, duration)
+    pcall(function()
+        game.StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration or 4
+        })
+    end)
 end
 
--- Function to toggle NoClip
+local window = library:CreateWindow("Plow Hub - Dead Rails", {
+    -- Cập nhật màu sắc UI (màu đen tím ánh)
+    BackgroundColor3 = Color3.fromRGB(32, 32, 64), -- Nền màu đen tím ánh
+    TextColor3 = Color3.fromRGB(204, 204, 255), -- Chữ màu sáng tím nhạt
+    BorderColor3 = Color3.fromRGB(85, 85, 255), -- Viền tím
+})
+
+-- Thêm chức năng Bypass To End
+window:AddButton({
+    text = "Bypass To End",
+    callback = function()
+        sendNotification("Spam Button If Not Teleported", "Keep clicking if teleport fails", 4)
+        wait(1)  -- Đảm bảo có chút thời gian cho người dùng nhấn vào
+        -- Bypass teleport đến điểm cuối
+        player.Character:PivotTo(CFrame.new(-346, -69, -49060))  -- Đặt vị trí bạn muốn teleport đến
+    end,
+    -- Cập nhật màu sắc của nút bấm
+    BackgroundColor3 = Color3.fromRGB(85, 85, 255), -- Màu tím sáng cho nút
+    TextColor3 = Color3.fromRGB(255, 255, 255) -- Màu trắng cho chữ trên nút
+})
+
+-- Cập nhật chức năng NoClip
 local noclipEnabled = false
 local function toggleNoClip()
     noclipEnabled = not noclipEnabled
@@ -46,72 +56,23 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Function to speed boost
-local speedBoostEnabled = false
-local originalWalkSpeed = player.Character.Humanoid.WalkSpeed
-
-local function toggleSpeedBoost()
-    speedBoostEnabled = not speedBoostEnabled
-    if speedBoostEnabled then
-        player.Character.Humanoid.WalkSpeed = originalWalkSpeed * 3  -- Speed Boost gấp 3 lần
-    else
-        player.Character.Humanoid.WalkSpeed = originalWalkSpeed  -- Reset về tốc độ ban đầu
-    end
-end
-
--- Function to display notification
-local function sendNotification(title, text, duration)
-    pcall(function()
-        game.StarterGui:SetCore("SendNotification", {
-            Title = title,
-            Text = text,
-            Duration = duration or 4
-        })
-    end)
-end
-
--- Creating UI
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/liebertsx/Tora-Library/main/src/librarynew", true))()
-
-local window = library:CreateWindow("Plow Hub - Dead Rails")
-
-window:AddButton({
-    text = "Bypass To End",
-    callback = function()
-        sendNotification("Bypass To End", "Teleporting to the end...", 4)
-        bypassToEnd()
-    end
-})
-
 window:AddButton({
     text = "Toggle NoClip",
     callback = function()
         toggleNoClip()
         sendNotification("NoClip Status", "NoClip is now " .. (noclipEnabled and "Enabled" or "Disabled"), 4)
-    end
+    end,
+    -- Cập nhật màu sắc của nút bấm
+    BackgroundColor3 = Color3.fromRGB(85, 85, 255), -- Màu tím sáng cho nút
+    TextColor3 = Color3.fromRGB(255, 255, 255) -- Màu trắng cho chữ trên nút
 })
 
-window:AddButton({
-    text = "Toggle Speed Boost",
-    callback = function()
-        toggleSpeedBoost()
-        sendNotification("Speed Boost", "Speed Boost is now " .. (speedBoostEnabled and "Enabled" or "Disabled"), 4)
-    end
+-- Khởi tạo UI
+window:AddLabel({ 
+    text = "Credits: Dora & Shidou & Play", 
+    type = "label",
+    -- Cập nhật màu sắc chữ cho label
+    TextColor3 = Color3.fromRGB(204, 204, 255), -- Chữ sáng tím nhạt cho label
 })
 
-window:AddLabel({ text = "Credits: Dora & Shidou & Play", type = "label" })
 library:Init()
-
--- Keybinding for toggling UI with Ctrl
-local UserInputService = game:GetService("UserInputService")
-local uiVisible = true
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.Keyboard then
-        if input.KeyCode == Enum.KeyCode.LeftControl then
-            uiVisible = not uiVisible
-            window:SetVisible(uiVisible)
-        end
-    end
-end)
