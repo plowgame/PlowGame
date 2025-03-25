@@ -14,7 +14,7 @@ local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
 
--- 🍑 Chặn AFK
+-- Chặn AFK
 LocalPlayer.Idled:Connect(function()
     if isKRNL then
         VirtualUser:CaptureController()
@@ -126,37 +126,34 @@ local function StoreFruit(fruitName)
     end
 end
 
--- Tạo danh sách server để chuyển đến
-local serverList = {
-    "server1", "server2", "server3", "server4", "server5",
-    "server6", "server7", "server8", "server9", "server10"
-}
-
--- Chuyển server sau khi đếm ngược
-local function ServerHopWithCountdown()
-    local countdown = 5
-    while countdown > 0 do
-        StatusLabel.Text = "⏳ Đang đếm ngược: " .. countdown .. " giây trước khi chuyển server..."
-        wait(1)
-        countdown = countdown - 1
-    end
-    
-    -- Chọn một server ngẫu nhiên từ danh sách
-    local randomServer = serverList[math.random(1, #serverList)]
-    StatusLabel.Text = "🚀 Đang chuyển đến server: " .. randomServer
-
-    -- Logic chuyển server
-    local success, err = pcall(function()
-        -- Giả sử bạn có một hàm để teleport đến server
-        TeleportService:Teleport(randomServer)
+-- Kiểm tra trái ác quỷ đã lưu vào rương chưa
+local function IsFruitStored(fruitName)
+    local success, result = pcall(function()
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStoredFruits") -- Hàm giả định lấy danh sách trái đã lưu
     end)
 
-    if not success then
-        StatusLabel.Text = "❌ Không thể chuyển server: " .. err
+    if success then
+        for _, storedFruit in pairs(result) do
+            if storedFruit == fruitName then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+-- Cập nhật trạng thái khi trái chưa được lưu
+local function UpdateStatusForUnstoredFruit(fruit)
+    local isStored = IsFruitStored(fruit.Name)
+    if isStored then
+        StatusLabel.Text = "✅ Trái " .. fruit.Name .. " đã được lưu trữ vào rương!"
+    else
+        StatusLabel.Text = "❌ Trái " .. fruit.Name .. " chưa được lưu trữ vào rương!"
     end
 end
 
--- **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
+-- Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược
 while true do
     local fruit = FindFruits()
     if fruit then
@@ -168,6 +165,7 @@ while true do
         LocalPlayer.Character.Humanoid:EquipTool(fruit)
         wait(1)
         StoreFruit(fruit.Name)
+        UpdateStatusForUnstoredFruit(fruit)
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
         ServerHopWithCountdown()
