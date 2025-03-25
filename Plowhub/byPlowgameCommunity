@@ -22,21 +22,6 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- Tự động chọn Hải Tặc khi vào game
-if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
-    local args = { [1] = "SetTeam", [2] = "Pirates" }
-    local success, err = pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
-    end)
-    if not success then
-        print("Error when invoking SetTeam:", err)
-    end
-    wait(1)
-    pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
-    end)
-end
-
 -- Tạo UI hiển thị trên màn hình
 local function CreateUI()
     local screenGui = Instance.new("ScreenGui")
@@ -158,16 +143,6 @@ local function IsFruitStored(fruitName)
     return false
 end
 
--- Cập nhật trạng thái khi trái chưa được lưu
-local function UpdateStatusForUnstoredFruit(fruit)
-    local isStored = IsFruitStored(fruit.Name)
-    if isStored then
-        StatusLabel.Text = "✅ Trái " .. fruit.Name .. " đã được lưu trữ vào rương!"
-    else
-        StatusLabel.Text = "❌ Trái " .. fruit.Name .. " chưa được lưu trữ vào rương!"
-    end
-end
-
 -- Bộ đếm thời gian đếm ngược
 local function StartCountdown()
     local countdown = 5
@@ -203,3 +178,15 @@ while true do
         wait(1)
 
         -- Nhặt trái & lưu vào kho
+        StoreFruit(fruit.Name)
+        wait(5) -- Đợi 5 giây trước khi kiểm tra lại
+
+        -- Kiểm tra sau khi lưu trữ
+        UpdateStatusForUnstoredFruit(fruit)
+        StartCountdown()
+        ServerHopWithCountdown()
+    else
+        StatusLabel.Text = "🔎 Không tìm thấy trái ác quỷ."
+        wait(2) -- Đợi một lúc trước khi tìm lại trái
+    end
+end
