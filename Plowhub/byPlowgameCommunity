@@ -9,7 +9,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- Kiểm tra xem có phải là KRNL PE hay không
+-- 🥭Kiểm tra xem có phải là KRNL PE hay không
 local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
@@ -21,6 +21,21 @@ LocalPlayer.Idled:Connect(function()
         VirtualUser:ClickButton2(Vector2.new())
     end
 end)
+
+-- Tự động chọn Hải Tặc khi vào game
+local function JoinPirateTeam()
+    local args = { [1] = "SetTeam", [2] = "Pirates" }
+    local success, err = pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+    end)
+    if not success then
+        print("Error when invoking SetTeam:", err)
+    end
+    wait(1)
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
+    end)
+end
 
 -- Tạo UI hiển thị trên màn hình
 local function CreateUI()
@@ -171,22 +186,13 @@ end
 
 -- Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược
 while true do
+    -- Tự động vào hải tặc khi vào game
+    if game.PlaceId == 2753915549 then
+        JoinPirateTeam()
+        wait(5) -- Đợi một chút để chắc chắn đã vào hải tặc
+
+    end
+
     local fruit = FindFruits()
     if fruit then
-        StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ!"
-        TeleportToPosition(fruit.Handle.CFrame)
-        wait(1)
-
-        -- Nhặt trái & lưu vào kho
-        StoreFruit(fruit.Name)
-        wait(5) -- Đợi 5 giây trước khi kiểm tra lại
-
-        -- Kiểm tra sau khi lưu trữ
-        UpdateStatusForUnstoredFruit(fruit)
-        StartCountdown()
-        ServerHopWithCountdown()
-    else
-        StatusLabel.Text = "🔎 Không tìm thấy trái ác quỷ."
-        wait(2) -- Đợi một lúc trước khi tìm lại trái
-    end
-end
+        Status
