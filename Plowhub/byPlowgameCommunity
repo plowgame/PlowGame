@@ -1,14 +1,4 @@
-repeat wait() until game:IsLoaded()
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local VirtualUser = game:GetService("VirtualUser")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-
--- 🔄🍌 Chặn AFK
+-- 🔄🌽 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -122,7 +112,7 @@ local function ServerHopWithCountdown()
     local servers = HttpService:JSONDecode(serversData).data
     local selectedServer = nil
     
-    -- Chọn server có ít người chơi nhất
+    -- Chọn server có ít người chơi nhất và còn chỗ trống
     for _, server in ipairs(servers) do
         if server.playing < server.maxPlayers then
             selectedServer = server
@@ -160,23 +150,7 @@ while true do
         -- 🏆 Nhặt trái & lưu vào kho
         LocalPlayer.Character.Humanoid:EquipTool(fruit)
         wait(1)
-        
-        -- Đợi cho đến khi trái được lưu thành công
-        local successStore = false
-        local tryCount = 0
-        while not successStore and tryCount < 5 do
-            successStore = pcall(function()
-                StoreFruit(fruit.Name)
-            end)
-            tryCount = tryCount + 1
-            wait(2) -- Chờ một khoảng thời gian ngắn trước khi thử lại
-        end
-
-        if successStore then
-            StatusLabel.Text = "✅ Lưu trữ trái thành công!"
-        else
-            StatusLabel.Text = "❌ Không thể lưu trữ trái!"
-        end
+        StoreFruit(fruit.Name)
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
         ServerHopWithCountdown()
