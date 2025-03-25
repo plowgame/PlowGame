@@ -9,18 +9,32 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄🎱 Chặn AFK
+-- Kiểm tra xem có phải là KRNL PE hay không
+local isKRNL = pcall(function()
+    return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
+end)
+
+-- 🔄🎾 Chặn AFK (có thể không cần thiết cho KRNL PE, nhưng đảm bảo rằng nó chạy tốt)
 LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
+    if isKRNL then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end
 end)
 
 -- 🏴 Tự động chọn Hải Tặc khi vào game
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
-    ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+    local success, err = pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
+    end)
+    if not success then
+        print("Error when invoking SetTeam:", err)
+    end
     wait(1)
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
+    end)
 end
 
 -- 📌 Tạo UI hiển thị trên màn hình
@@ -101,8 +115,15 @@ end
 
 -- ✅ Lưu trữ trái vào kho
 local function StoreFruit(fruitName)
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
-    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+    local success, message = pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+    end)
+    
+    if success then
+        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+    else
+        StatusLabel.Text = "❌ Không thể lưu trữ trái " .. fruitName .. "."
+    end
 end
 
 -- 🌐 **Cải tiến Server Hop với bộ lọc và hiệu suất cao hơn**
@@ -182,7 +203,7 @@ while true do
         -- 🏆 Nhặt trái & lưu vào kho
         LocalPlayer.Character.Humanoid:EquipTool(fruit)
         wait(1)
-        StoreFruit(fruit.Name)
+        StoreFruit(fruit.Name)  -- Lưu trữ trái vào kho sau khi nhặt
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
         -- Đợi 5 giây trước khi tự động server hop
