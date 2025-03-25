@@ -9,7 +9,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄 Chặn AFK
+-- 🔄🎱 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -52,11 +52,13 @@ local function CreateUI()
     StatusFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     StatusFrame.BackgroundTransparency = 0.2
 
+    -- 📑 TextLabel cho trạng thái với TextWrapped
     local StatusLabel = Instance.new("TextLabel", StatusFrame)
     StatusLabel.Size = UDim2.new(1, 0, 1, 0)
     StatusLabel.TextSize = 18
     StatusLabel.TextColor3 = Color3.new(1, 1, 1)
     StatusLabel.BackgroundTransparency = 1
+    StatusLabel.TextWrapped = true  -- Bật tính năng tự động xuống dòng
     StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
 
     -- 🎯 FPS Counter
@@ -147,6 +149,28 @@ local function ServerHopWithImprovedLogic()
     StatusLabel.Text = "❌ Không thể tìm thấy server sau " .. maxAttempts .. " lần thử!"
 end
 
+-- 🌐 **Tự động tham gia server thông thường**
+local function AutoJoinServer()
+    StatusLabel.Text = "🔄 Tìm server công khai để tham gia..."
+    
+    local success, response = pcall(function()
+        return game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=10")
+    end)
+
+    if success then
+        local servers = HttpService:JSONDecode(response).data
+        if #servers > 0 then
+            local server = servers[math.random(1, #servers)] -- Chọn ngẫu nhiên server trong danh sách
+            StatusLabel.Text = "🔁 Đang tham gia server..."
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+        else
+            StatusLabel.Text = "❌ Không tìm thấy server công khai!"
+        end
+    else
+        StatusLabel.Text = "❌ Không thể lấy danh sách server!"
+    end
+end
+
 -- 🔁 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
 while true do
     local fruit = FindFruits()
@@ -161,7 +185,15 @@ while true do
         StoreFruit(fruit.Name)
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
-        ServerHopWithImprovedLogic()  -- Sử dụng server hop cải tiến
+        -- Đợi 5 giây trước khi tự động server hop
+        for i = 5, 1, -1 do
+            StatusLabel.Text = "🔄 Chuyển server sau " .. i .. " giây..."
+            wait(1)
+        end
+
+        -- Sau khi đếm 5 giây, thực hiện server hop hoặc tham gia server công khai
+        ServerHopWithImprovedLogic()
+        AutoJoinServer()  -- Thêm chức năng tham gia server công khai khi không tìm thấy trái
     end
 
     wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
