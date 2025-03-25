@@ -1,153 +1,117 @@
--- 🛡️ Anti Ban mạnh mẽ
-local mt = getrawmetatable(game)
-setreadonly(mt, false)
-local oldNamecall = mt.__namecall
-mt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    if method == "Kick" or method == "ban" or method == "Destroy" then
-        warn("[ANTI BAN] Ngăn chặn lệnh: " .. method)
-        return
-    end
-    return oldNamecall(self, ...)
-end)
-
-print("[✅ ANTI BAN] Đã kích hoạt thành công!")
-
--- 🌀 Bypass Speed Boost (Chạy nhanh không bị chặn)
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local humanoid = character:WaitForChild("Humanoid")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
 
-local function smoothSpeedBoost(targetSpeed, duration)
-    local startSpeed = humanoid.WalkSpeed
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local goal = {WalkSpeed = targetSpeed}
-    local tween = TweenService:Create(humanoid, tweenInfo, goal)
-    tween:Play()
+-- Bypass To End function
+local function bypassToEnd()
+    if not humanoidRootPart or not humanoid then return end
+
+    -- Bypass Anti-Cheat trước khi teleport
+    humanoidRootPart.Anchored = true  -- Ngăn game kiểm tra di chuyển bất thường
+    humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)  -- Chống lỗi ragdoll hoặc bug vật lý
+    wait(0.1)
+
+    -- Kiểm tra lại trước khi teleport để tránh lỗi game
+    if humanoidRootPart.Parent then
+        humanoidRootPart.CFrame = CFrame.new(-346, -69, -49060) -- Điểm cuối của teleport
+    end
+    wait(0.1)
+
+    -- Khôi phục lại trạng thái nhân vật
+    humanoidRootPart.Anchored = false
+    humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, true)  -- Bật lại trạng thái vật lý
 end
 
--- 🎨 UI Plow Hub - Dead Rails
-local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-
-local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 250, 0, 260)
-frame.Position = UDim2.new(0.5, -125, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Visible = false
-
-local UICorner = Instance.new("UICorner", frame)
-UICorner.CornerRadius = UDim.new(0, 10)
-
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0.2, 0)
-title.Text = "PLOW HUB - DEAD RAILS"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.BackgroundTransparency = 1
-
--- 🌟 Hiệu ứng mở/tắt UI bằng TweenService
-local function toggleUI()
-    if frame.Visible then
-        local tween = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 250, 0, 0)})
-        tween:Play()
-        tween.Completed:Connect(function()
-            frame.Visible = false
-        end)
-    else
-        frame.Visible = true
-        local tween = TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 250, 0, 260)})
-        tween:Play()
-    end
-end
-
--- 🏃‍♂️ Nút Speed Boost (Bypass)
-local speedButton = Instance.new("TextButton", frame)
-speedButton.Size = UDim2.new(0.9, 0, 0.2, 0)
-speedButton.Position = UDim2.new(0.05, 0, 0.4, 0)
-speedButton.Text = "Speed Boost: OFF"
-speedButton.Font = Enum.Font.GothamBold
-speedButton.TextSize = 16
-speedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-local UICorner2 = Instance.new("UICorner", speedButton)
-UICorner2.CornerRadius = UDim.new(0, 8)
-
--- 🚀 Nút Noclip
-local noclipButton = Instance.new("TextButton", frame)
-noclipButton.Size = UDim2.new(0.9, 0, 0.2, 0)
-noclipButton.Position = UDim2.new(0.05, 0, 0.65, 0)
-noclipButton.Text = "Noclip: OFF"
-noclipButton.Font = Enum.Font.GothamBold
-noclipButton.TextSize = 16
-noclipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-noclipButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-local UICorner3 = Instance.new("UICorner", noclipButton)
-UICorner3.CornerRadius = UDim.new(0, 8)
-
--- 🏃‍♂️ Bypass Speed Boost
-local speedEnabled = false
-local defaultWalkSpeed = humanoid.WalkSpeed
-local maxSpeed = 80  -- Giới hạn tốc độ tối đa (không quá nhanh để tránh bị phát hiện)
-
-speedButton.MouseButton1Click:Connect(function()
-    speedEnabled = not speedEnabled
-    if speedEnabled then
-        smoothSpeedBoost(maxSpeed, 2)  -- Tăng tốc dần trong 2 giây
-        speedButton.Text = "Speed Boost: ON"
-    else
-        smoothSpeedBoost(defaultWalkSpeed, 2)  -- Giảm tốc từ từ về bình thường
-        speedButton.Text = "Speed Boost: OFF"
-    end
-end)
-
--- 🚀 Noclip
+-- Function to toggle NoClip
 local noclipEnabled = false
-
-noclipButton.MouseButton1Click:Connect(function()
+local function toggleNoClip()
     noclipEnabled = not noclipEnabled
-    if noclipEnabled then
-        noclipButton.Text = "Noclip: ON"
-    else
-        noclipButton.Text = "Noclip: OFF"
+    for _, part in pairs(player.Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not noclipEnabled
+        end
     end
-end)
+end
 
 RunService.Stepped:Connect(function()
-    if noclipEnabled and character then
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
+    if noclipEnabled and player.Character then
+        for _, part in pairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
                 part.CanCollide = false
             end
         end
     end
 end)
 
--- 🎮 Bật/Tắt UI bằng phím `Ctrl`
-UIS.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed then
+-- Function to speed boost
+local speedBoostEnabled = false
+local originalWalkSpeed = player.Character.Humanoid.WalkSpeed
+
+local function toggleSpeedBoost()
+    speedBoostEnabled = not speedBoostEnabled
+    if speedBoostEnabled then
+        player.Character.Humanoid.WalkSpeed = originalWalkSpeed * 3  -- Speed Boost gấp 3 lần
+    else
+        player.Character.Humanoid.WalkSpeed = originalWalkSpeed  -- Reset về tốc độ ban đầu
+    end
+end
+
+-- Function to display notification
+local function sendNotification(title, text, duration)
+    pcall(function()
+        game.StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration or 4
+        })
+    end)
+end
+
+-- Creating UI
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/liebertsx/Tora-Library/main/src/librarynew", true))()
+
+local window = library:CreateWindow("Plow Hub - Dead Rails")
+
+window:AddButton({
+    text = "Bypass To End",
+    callback = function()
+        sendNotification("Bypass To End", "Teleporting to the end...", 4)
+        bypassToEnd()
+    end
+})
+
+window:AddButton({
+    text = "Toggle NoClip",
+    callback = function()
+        toggleNoClip()
+        sendNotification("NoClip Status", "NoClip is now " .. (noclipEnabled and "Enabled" or "Disabled"), 4)
+    end
+})
+
+window:AddButton({
+    text = "Toggle Speed Boost",
+    callback = function()
+        toggleSpeedBoost()
+        sendNotification("Speed Boost", "Speed Boost is now " .. (speedBoostEnabled and "Enabled" or "Disabled"), 4)
+    end
+})
+
+window:AddLabel({ text = "Credits: Dora & Shidou & Play", type = "label" })
+library:Init()
+
+-- Keybinding for toggling UI with Ctrl
+local UserInputService = game:GetService("UserInputService")
+local uiVisible = true
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
         if input.KeyCode == Enum.KeyCode.LeftControl then
-            toggleUI()
-        elseif input.KeyCode == Enum.KeyCode.V then
-            speedEnabled = not speedEnabled
-            if speedEnabled then
-                smoothSpeedBoost(maxSpeed, 2)
-                speedButton.Text = "Speed Boost: ON"
-            else
-                smoothSpeedBoost(defaultWalkSpeed, 2)
-                speedButton.Text = "Speed Boost: OFF"
-            end
-        elseif input.KeyCode == Enum.KeyCode.N then
-            noclipEnabled = not noclipEnabled
-            noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
+            uiVisible = not uiVisible
+            window:SetVisible(uiVisible)
         end
     end
 end)
