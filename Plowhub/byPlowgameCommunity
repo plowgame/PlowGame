@@ -1,4 +1,4 @@
-repeat wait() until game:IsLoaded()
+repeat task.wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -18,7 +18,7 @@ end)
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
     ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
-    wait(1)
+    task.wait(1)
     ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
@@ -105,7 +105,7 @@ end
 local function ServerHopWithCountdown()
     for i = 5, 1, -1 do
         StatusLabel.Text = "🔄 Chuyển server sau " .. i .. " giây..."
-        wait(1)
+        task.wait(1)
     end
     StatusLabel.Text = "🔁 Đang chuyển server..."
     
@@ -126,16 +126,16 @@ while true do
     if fruit then
         StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ!"
         TeleportToPosition(fruit.Handle.CFrame)
-        wait(1)
+        task.wait(1)
 
         -- 🏆 Nhặt trái & lưu vào kho
         LocalPlayer.Character.Humanoid:EquipTool(fruit)
-        wait(1)
+        task.wait(1)
         StoreFruit(fruit.Name)
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
         ServerHopWithCountdown()
     end
 
-    wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
+    task.wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
 end
