@@ -14,7 +14,7 @@ local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
 
--- Chặn AFK
+-- 🍑 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     if isKRNL then
         VirtualUser:CaptureController()
@@ -126,6 +126,12 @@ local function StoreFruit(fruitName)
     end
 end
 
+-- Tạo danh sách server để chuyển đến
+local serverList = {
+    "server1", "server2", "server3", "server4", "server5",
+    "server6", "server7", "server8", "server9", "server10"
+}
+
 -- Chuyển server sau khi đếm ngược
 local function ServerHopWithCountdown()
     local countdown = 5
@@ -135,12 +141,14 @@ local function ServerHopWithCountdown()
         countdown = countdown - 1
     end
     
-    -- Logic để chuyển server
+    -- Chọn một server ngẫu nhiên từ danh sách
+    local randomServer = serverList[math.random(1, #serverList)]
+    StatusLabel.Text = "🚀 Đang chuyển đến server: " .. randomServer
+
+    -- Logic chuyển server
     local success, err = pcall(function()
-        -- Đây là nơi bạn thực hiện logic chuyển server ngẫu nhiên
-        local servers = game:GetService("TeleportService"):GetJoinedGames()
-        local randomServer = servers[math.random(1, #servers)]
-        TeleportService:TeleportToPlaceInstance(randomServer.PlaceId, randomServer.InstanceId)
+        -- Giả sử bạn có một hàm để teleport đến server
+        TeleportService:Teleport(randomServer)
     end)
 
     if not success then
