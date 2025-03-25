@@ -8,7 +8,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄🍑 Chặn AFK
+-- 🔄🫐 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -125,20 +125,37 @@ local function ServerHopWithCountdown()
     StatusLabel.Text = "🔁 Đang chuyển server..."
     
     -- Lấy danh sách server từ API
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
+    local success, serversData = pcall(function()
+        return game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")
+    end)
+
+    if not success then
+        StatusLabel.Text = "❌ Không thể lấy danh sách server!"
+        return
+    end
+
+    local servers = HttpService:JSONDecode(serversData).data
     local singaporeServer = nil
     
-    -- Tìm server ở Singapore
+    -- Tìm server ở Singapore (region "SG")
     for _, server in ipairs(servers) do
-        if server.playing < server.maxPlayers and server.region == "SG" then  -- "SG" là mã vùng cho Singapore
+        if server.playing < server.maxPlayers and server.region == "SG" then
             singaporeServer = server
             break
         end
     end
 
     if singaporeServer then
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, singaporeServer.id, LocalPlayer)
-        StatusLabel.Text = "🔁 Đã chuyển đến server Singapore!"
+        -- Thực hiện teleport sang server đã chọn
+        local successTeleport = pcall(function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, singaporeServer.id, LocalPlayer)
+        end)
+
+        if successTeleport then
+            StatusLabel.Text = "🔁 Đã chuyển đến server Singapore!"
+        else
+            StatusLabel.Text = "❌ Lỗi khi teleport đến server!"
+        end
     else
         StatusLabel.Text = "❌ Không tìm thấy server Singapore phù hợp!"
     end
