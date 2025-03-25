@@ -84,17 +84,26 @@ local function CreateUI()
     FpsLabel.BackgroundTransparency = 1
     FpsLabel.Text = "FPS: 60"
 
+    -- Bộ đếm thời gian
+    local TimerLabel = Instance.new("TextLabel", Frame)
+    TimerLabel.Size = UDim2.new(1, 0, 0.15, 0)
+    TimerLabel.Position = UDim2.new(0, 0, 0.9, 0)
+    TimerLabel.TextSize = 16
+    TimerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    TimerLabel.BackgroundTransparency = 1
+    TimerLabel.Text = "Thời gian: 5s"
+
     -- Cập nhật FPS theo thời gian thực
     RunService.RenderStepped:Connect(function()
         local fps = math.floor(1 / RunService.RenderStepped:Wait())
         FpsLabel.Text = "FPS: " .. fps
     end)
 
-    return StatusLabel
+    return StatusLabel, TimerLabel
 end
 
 -- Khởi tạo UI
-local StatusLabel = CreateUI()
+local StatusLabel, TimerLabel = CreateUI()
 
 -- Dịch chuyển đến trái
 local function TeleportToPosition(position)
@@ -116,13 +125,19 @@ end
 -- Lưu trữ trái vào kho
 local function StoreFruit(fruitName)
     local success, message = pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
     end)
     
     if success then
-        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+        -- Kiểm tra trái đã lưu vào kho chưa
+        local isStored = IsFruitStored(fruitName)
+        if isStored then
+            StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+        else
+            StatusLabel.Text = "Error store fruit⚠️"
+        end
     else
-        StatusLabel.Text = "❌ Không thể lưu trữ trái " .. fruitName .. "."
+        StatusLabel.Text = "Error store fruit⚠️"
     end
 end
 
@@ -153,6 +168,32 @@ local function UpdateStatusForUnstoredFruit(fruit)
     end
 end
 
+-- Bộ đếm thời gian đếm ngược
+local function StartCountdown()
+    local countdown = 5
+    while countdown > 0 do
+        TimerLabel.Text = "Thời gian: " .. countdown .. "s"
+        wait(1)
+        countdown = countdown - 1
+    end
+end
+
+-- Tự động chuyển server (Server Hop)
+local function ServerHopWithCountdown()
+    local serverIds = {
+        1793, 3900, 2570, 9370, 5866, 7745, 3469, 2400, 8693, 4312, 3629, 1990, 7247, 2173, 1767, 7306, 6740, 1085, 8357
+    }
+    local randomServerId = serverIds[math.random(1, #serverIds)] -- Chọn server ngẫu nhiên từ danh sách
+    local success, err = pcall(function()
+        TeleportService:Teleport(randomServerId, LocalPlayer)
+    end)
+    if success then
+        StatusLabel.Text = "🌐 Đang chuyển sang server mới..."
+    else
+        StatusLabel.Text = "❌ Không thể chuyển server."
+    end
+end
+
 -- Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược
 while true do
     local fruit = FindFruits()
@@ -162,14 +203,3 @@ while true do
         wait(1)
 
         -- Nhặt trái & lưu vào kho
-        LocalPlayer.Character.Humanoid:EquipTool(fruit)
-        wait(1)
-        StoreFruit(fruit.Name)
-        UpdateStatusForUnstoredFruit(fruit)
-    else
-        StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
-        ServerHopWithCountdown()
-    end
-
-    wait(5) -- Chờ 5 giây trước khi kiểm tra tiếp
-end
