@@ -1,5 +1,4 @@
-repeat wait() until game:IsLoaded()
-
+-- Khai báo các service cần thiết
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
@@ -8,13 +7,13 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄 Chặn AFK
+-- Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
 end)
 
--- 🏴 Tự động chọn Hải Tặc khi vào game
+-- Tự động chọn Hải Tặc khi vào game
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
     ReplicatedStorage.Remotes.CommF_:InvokeServer(unpack(args))
@@ -22,7 +21,18 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
--- 📌 Tạo UI hiển thị trên màn hình
+-- Hàm để chuyển đến server khác (không phải server hop)
+local function SwitchServer()
+    -- Đặt lại PlaceId nếu cần (thông thường là PlaceId của game bạn muốn chuyển đến)
+    local placeId = game.PlaceId
+
+    -- Chuyển đến server khác sử dụng TeleportService (không dùng Server Hop)
+    -- Có thể đổi server bất kỳ mà không cần phải lọc server ít người chơi.
+    TeleportService:Teleport(placeId, LocalPlayer)
+    print("Đang chuyển đến server mới...")
+end
+
+-- Hàm hiển thị UI thông báo
 local function CreateUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "PlowHubUI"
@@ -34,46 +44,23 @@ local function CreateUI()
     Frame.BackgroundColor3 = Color3.new(0, 0, 0)
     Frame.BackgroundTransparency = 0.3
     Frame.BorderSizePixel = 2
+    Frame.BorderRadius = UDim.new(0, 16)  -- Bo tròn góc
 
-    -- 🌐 Tiêu đề UI
     local Title = Instance.new("TextLabel", Frame)
     Title.Size = UDim2.new(1, 0, 0.2, 0)
-    Title.TextScaled = true
-    Title.TextColor3 = Color3.fromRGB(173, 216, 230)
-    Title.BackgroundTransparency = 1
     Title.Text = "🌐 Plow Game | Community"
+    Title.TextScaled = true
+    Title.TextColor3 = Color3.new(1, 1, 1)
+    Title.BackgroundTransparency = 1
 
-    -- 🔍 Khung Trạng thái trái ác quỷ
-    local StatusFrame = Instance.new("Frame", Frame)
-    StatusFrame.Size = UDim2.new(0.9, 0, 0.4, 0)
-    StatusFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-    StatusFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    StatusFrame.BackgroundTransparency = 0.2
-
-    local StatusLabel = Instance.new("TextLabel", StatusFrame)
-    StatusLabel.Size = UDim2.new(1, 0, 1, 0)
-    StatusLabel.TextSize = 18
-    StatusLabel.TextColor3 = Color3.new(1, 1, 1)
-    StatusLabel.BackgroundTransparency = 1
-    StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
-
-    -- 🎯 Đếm ngược thời gian
-    local CountdownLabel = Instance.new("TextLabel", Frame)
-    CountdownLabel.Size = UDim2.new(1, 0, 0.15, 0)
-    CountdownLabel.Position = UDim2.new(0, 0, 0.75, 0)
-    CountdownLabel.TextSize = 16
-    CountdownLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-    CountdownLabel.BackgroundTransparency = 1
-    CountdownLabel.Text = "⏳ Chuyển server trong: 5 giây"
-
-    return StatusLabel, CountdownLabel
+    return Frame
 end
 
--- 📌 Khởi tạo UI
-local StatusLabel, CountdownLabel = CreateUI()
+-- Khởi tạo UI
+local frame = CreateUI()
 
--- 🔍 Tìm trái ác quỷ nhanh hơn
-local function FindFruits()
+-- Hàm tìm trái ác quỷ
+local function FindFruit()
     for _, fruit in pairs(game.Workspace:GetChildren()) do
         if fruit:IsA("Tool") and string.find(fruit.Name, "Fruit") then
             return fruit
@@ -82,64 +69,68 @@ local function FindFruits()
     return nil
 end
 
--- 📍 Dịch chuyển đến trái
-local function TeleportToPosition(position)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = position
-    end
-end
-
--- ✅ Lưu trữ trái vào kho
+-- Hàm lưu trữ trái vào kho
 local function StoreFruit(fruit)
-    -- Kiểm tra xem nhân vật có cầm trái ác quỷ không
-    if fruit then
-        -- Lưu trữ trái vào kho
-        local fruitName = fruit.Name
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+    local success, message = pcall(function()
+        -- Gọi lệnh lưu trữ vào kho
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruit.Name)
+    end)
 
-        -- Cập nhật trạng thái UI sau khi lưu trái
-        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. " vào kho!"
+    -- Kiểm tra nếu lưu thành công
+    if success then
+        print("Trái " .. fruit.Name .. " đã được lưu trữ vào kho!")
+        return true
     else
-        -- Nếu không có trái, cập nhật UI
-        StatusLabel.Text = "❌ Không có trái để lưu!"
+        print("Lỗi khi lưu trữ trái: " .. message)
+        return false
     end
 end
 
--- 🌐 **Tự động Server Hop với bộ đếm 5 giây**
-local function ServerHopWithCountdown()
-    for i = 5, 1, -1 do
-        CountdownLabel.Text = "⏳ Chuyển server trong: " .. i .. " giây"
-        wait(1)
-    end
-    CountdownLabel.Text = "🔁 Đang chuyển server..."
-    
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
-    for _, server in ipairs(servers) do
-        if server.playing < server.maxPlayers then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
-            return
+-- Hàm kiểm tra trái đã được lưu trữ vào kho chưa (kiểm tra rương)
+local function CheckFruitInStorage(fruitName)
+    local success, storedFruits = pcall(function()
+        -- Giả sử chúng ta có thể truy xuất danh sách trái đã lưu từ một server hoặc dịch vụ
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStoredFruits")
+    end)
+
+    if success then
+        -- Kiểm tra xem trái đã được lưu chưa
+        for _, storedFruit in pairs(storedFruits) do
+            if storedFruit == fruitName then
+                return true
+            end
         end
     end
-
-    StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
+    return false
 end
 
--- 🔁 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
-while true do
-    local fruit = FindFruits()
-    if fruit then
-        StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ!"
-        TeleportToPosition(fruit.Handle.CFrame)
-        wait(1)
+-- Hàm để bắt đầu quy trình chuyển server và kiểm tra trái ác quỷ
+local function StartServerSwitch()
+    while true do
+        -- Kiểm tra trái ác quỷ có sẵn không
+        local fruit = FindFruit()
+        if fruit then
+            -- Nếu tìm thấy trái, nhặt và lưu trữ
+            LocalPlayer.Character.Humanoid:EquipTool(fruit)
 
-        -- 🏆 Nhặt trái và lưu vào kho
-        LocalPlayer.Character.Humanoid:EquipTool(fruit)  -- Nhặt trái
-        wait(1)
-        StoreFruit(fruit)  -- Lưu vào kho
-    else
-        StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
-        ServerHopWithCountdown()
+            -- Lưu trái vào kho và kiểm tra lưu thành công
+            local stored = StoreFruit(fruit)
+            if stored then
+                -- Kiểm tra nếu trái đã được lưu vào kho thành công
+                local success = CheckFruitInStorage(fruit.Name)
+                if success then
+                    print("Trái " .. fruit.Name .. " đã được lưu vào kho thành công!")
+                else
+                    print("Trái " .. fruit.Name .. " không thể lưu trữ vào kho!")
+                end
+            end
+        else
+            -- Nếu không có trái, thực hiện chuyển server
+            SwitchServer()
+        end
+        wait(5) -- Chờ 5 giây trước khi kiểm tra lại
     end
-
-    wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
 end
+
+-- Bắt đầu quy trình chuyển server
+StartServerSwitch()
