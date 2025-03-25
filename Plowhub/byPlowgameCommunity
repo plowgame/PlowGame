@@ -1,3 +1,4 @@
+-- Kiểm tra khi game đã load xong
 repeat wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
@@ -13,7 +14,7 @@ local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
 
--- 🔄🍓 Chặn AFK
+-- Chặn AFK
 LocalPlayer.Idled:Connect(function()
     if isKRNL then
         VirtualUser:CaptureController()
@@ -21,7 +22,7 @@ LocalPlayer.Idled:Connect(function()
     end
 end)
 
--- 🏴 Tự động chọn Hải Tặc khi vào game
+-- Tự động chọn Hải Tặc khi vào game
 if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then
     local args = { [1] = "SetTeam", [2] = "Pirates" }
     local success, err = pcall(function()
@@ -36,21 +37,21 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     end)
 end
 
--- 📌 Tạo UI hiển thị trên màn hình
+-- Tạo UI hiển thị trên màn hình
 local function CreateUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "PlowHubUI"
     screenGui.Parent = game.Players.LocalPlayer:FindFirstChild("PlayerGui") or game.CoreGui
 
     local Frame = Instance.new("Frame", screenGui)
-    Frame.Size = UDim2.new(0, 320, 0, 250)  -- Tăng chiều cao một chút
+    Frame.Size = UDim2.new(0, 320, 0, 200)  -- Tăng chiều cao một chút
     Frame.Position = UDim2.new(0.5, -160, 0.05, 0)
     Frame.BackgroundColor3 = Color3.new(0, 0, 0)
     Frame.BackgroundTransparency = 0.3
     Frame.BorderSizePixel = 2
     Frame.ClipsDescendants = true  -- Đảm bảo nội dung không vượt ra ngoài Frame
 
-    -- 🌐 Tiêu đề UI
+    -- Tiêu đề UI
     local Title = Instance.new("TextLabel", Frame)
     Title.Size = UDim2.new(1, 0, 0.2, 0)
     Title.TextScaled = true
@@ -58,14 +59,14 @@ local function CreateUI()
     Title.BackgroundTransparency = 1
     Title.Text = "🌐 Plow Game | Community"
 
-    -- 🔍 Khung Trạng thái trái ác quỷ
+    -- Khung Trạng thái trái ác quỷ
     local StatusFrame = Instance.new("Frame", Frame)
     StatusFrame.Size = UDim2.new(0.9, 0, 0.4, 0)
     StatusFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
     StatusFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     StatusFrame.BackgroundTransparency = 0.2
 
-    -- 📑 TextLabel cho trạng thái với TextWrapped
+    -- TextLabel cho trạng thái
     local StatusLabel = Instance.new("TextLabel", StatusFrame)
     StatusLabel.Size = UDim2.new(1, 0, 1, 0)
     StatusLabel.TextSize = 18
@@ -74,7 +75,7 @@ local function CreateUI()
     StatusLabel.TextWrapped = true  -- Bật tính năng tự động xuống dòng
     StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
 
-    -- 🎯 FPS Counter
+    -- FPS Counter
     local FpsLabel = Instance.new("TextLabel", Frame)
     FpsLabel.Size = UDim2.new(1, 0, 0.15, 0)
     FpsLabel.Position = UDim2.new(0, 0, 0.75, 0)
@@ -83,35 +84,26 @@ local function CreateUI()
     FpsLabel.BackgroundTransparency = 1
     FpsLabel.Text = "FPS: 60"
 
-    -- 🎯 Bộ đếm thời gian 5 giây
-    local TimerLabel = Instance.new("TextLabel", Frame)
-    TimerLabel.Size = UDim2.new(1, 0, 0.15, 0)
-    TimerLabel.Position = UDim2.new(0, 0, 0.9, 0)
-    TimerLabel.TextSize = 16
-    TimerLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-    TimerLabel.BackgroundTransparency = 1
-    TimerLabel.Text = "Thời gian: 5s"
-
-    -- 🎯 Cập nhật FPS theo thời gian thực
+    -- Cập nhật FPS theo thời gian thực
     RunService.RenderStepped:Connect(function()
         local fps = math.floor(1 / RunService.RenderStepped:Wait())
         FpsLabel.Text = "FPS: " .. fps
     end)
 
-    return StatusLabel, TimerLabel
+    return StatusLabel
 end
 
--- 📌 Khởi tạo UI
-local StatusLabel, TimerLabel = CreateUI()
+-- Khởi tạo UI
+local StatusLabel = CreateUI()
 
--- 📍 Dịch chuyển đến trái
+-- Dịch chuyển đến trái
 local function TeleportToPosition(position)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character.HumanoidRootPart.CFrame = position
     end
 end
 
--- 🔁 Tìm & nhặt trái
+-- Tìm & nhặt trái
 local function FindFruits()
     for _, fruit in pairs(game.Workspace:GetChildren()) do
         if fruit:IsA("Tool") and string.find(fruit.Name, "Fruit") then
@@ -121,7 +113,7 @@ local function FindFruits()
     return nil
 end
 
--- ✅ Lưu trữ trái vào kho
+-- Lưu trữ trái vào kho
 local function StoreFruit(fruitName)
     local success, message = pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
@@ -134,7 +126,29 @@ local function StoreFruit(fruitName)
     end
 end
 
--- 🌐 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
+-- Chuyển server sau khi đếm ngược
+local function ServerHopWithCountdown()
+    local countdown = 5
+    while countdown > 0 do
+        StatusLabel.Text = "⏳ Đang đếm ngược: " .. countdown .. " giây trước khi chuyển server..."
+        wait(1)
+        countdown = countdown - 1
+    end
+    
+    -- Logic để chuyển server
+    local success, err = pcall(function()
+        -- Đây là nơi bạn thực hiện logic chuyển server ngẫu nhiên
+        local servers = game:GetService("TeleportService"):GetJoinedGames()
+        local randomServer = servers[math.random(1, #servers)]
+        TeleportService:TeleportToPlaceInstance(randomServer.PlaceId, randomServer.InstanceId)
+    end)
+
+    if not success then
+        StatusLabel.Text = "❌ Không thể chuyển server: " .. err
+    end
+end
+
+-- **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
 while true do
     local fruit = FindFruits()
     if fruit then
@@ -142,23 +156,14 @@ while true do
         TeleportToPosition(fruit.Handle.CFrame)
         wait(1)
 
-        -- 🏆 Nhặt trái & lưu vào kho
+        -- Nhặt trái & lưu vào kho
         LocalPlayer.Character.Humanoid:EquipTool(fruit)
         wait(1)
         StoreFruit(fruit.Name)
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
-        -- Bộ đếm thời gian 5 giây
-        local countdown = 5
-        while countdown > 0 do
-            TimerLabel.Text = "Thời gian: " .. countdown .. "s"
-            wait(1)
-            countdown = countdown - 1
-        end
-        -- Sau khi đếm xong, thực hiện chuyển server
-        -- Thêm logic chuyển server vào đây (ví dụ: Server Hop)
-        wait(5) -- Chờ 5 giây trước khi thử lại
+        ServerHopWithCountdown()
     end
 
-    wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
+    wait(5) -- Chờ 5 giây trước khi kiểm tra tiếp
 end
