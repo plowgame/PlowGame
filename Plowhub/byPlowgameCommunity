@@ -8,7 +8,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄🫐 Chặn AFK
+-- 🔄🍈 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -116,7 +116,7 @@ local function StoreFruit(fruitName)
     end
 end
 
--- 🌐 **Tự động Server Hop với bộ đếm 5 giây và chọn server Singapore**
+-- 🌐 **Tự động Server Hop với bộ đếm 5 giây (không có khu vực)**
 local function ServerHopWithCountdown()
     for i = 5, 1, -1 do
         StatusLabel.Text = "🔄 Chuyển server sau " .. i .. " giây..."
@@ -124,7 +124,7 @@ local function ServerHopWithCountdown()
     end
     StatusLabel.Text = "🔁 Đang chuyển server..."
     
-    -- Lấy danh sách server từ API
+    -- Lấy danh sách server từ API (Sử dụng URL API chính xác)
     local success, serversData = pcall(function()
         return game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")
     end)
@@ -135,29 +135,29 @@ local function ServerHopWithCountdown()
     end
 
     local servers = HttpService:JSONDecode(serversData).data
-    local singaporeServer = nil
+    local selectedServer = nil
     
-    -- Tìm server ở Singapore (region "SG")
+    -- Chọn server có ít người chơi nhất
     for _, server in ipairs(servers) do
-        if server.playing < server.maxPlayers and server.region == "SG" then
-            singaporeServer = server
+        if server.playing < server.maxPlayers then
+            selectedServer = server
             break
         end
     end
 
-    if singaporeServer then
+    if selectedServer then
         -- Thực hiện teleport sang server đã chọn
         local successTeleport = pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, singaporeServer.id, LocalPlayer)
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, selectedServer.id, LocalPlayer)
         end)
 
         if successTeleport then
-            StatusLabel.Text = "🔁 Đã chuyển đến server Singapore!"
+            StatusLabel.Text = "🔁 Đã chuyển đến server mới!"
         else
             StatusLabel.Text = "❌ Lỗi khi teleport đến server!"
         end
     else
-        StatusLabel.Text = "❌ Không tìm thấy server Singapore phù hợp!"
+        StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
     end
 end
 
