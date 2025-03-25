@@ -6,7 +6,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄⚽️ Chặn AFK
+-- 🔄⛳️ Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -99,14 +99,12 @@ local function StoreFruit(fruitName)
     StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
 end
 
--- 🌐 **Tự động Server Hop với bộ đếm 5 giây**
+-- 🌐 **Tự động Server Hop siêu tốc**
 local function ServerHopWithCountdown()
     -- Đếm ngược 5 giây
     for i = 5, 1, -1 do
-        StatusLabel.Text = "🔄 Chuyển server sau " .. i .. " giây..."
         wait(1)
     end
-    StatusLabel.Text = "🔁 Đang chuyển server..."
 
     -- API để lấy danh sách các server
     local success, servers = pcall(function()
@@ -147,7 +145,6 @@ local function ServerHopWithCountdown()
     end)
 
     if success then
-        StatusLabel.Text = "🔁 Đang chuyển server..."
         foundServer = true
     else
         StatusLabel.Text = "❌ Lỗi khi chuyển server: " .. errorMsg
