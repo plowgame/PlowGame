@@ -8,7 +8,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄🍆 Chặn AFK
+-- 🔄🥥 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -95,28 +95,13 @@ local function TeleportToPosition(position)
     end
 end
 
--- ✅ Lưu trữ trái vào kho và kiểm tra thành công
+-- ✅ Lưu trữ trái vào kho
 local function StoreFruit(fruitName)
-    -- Cầm trái lên bằng cách trang bị vào tay
-    local fruit = LocalPlayer.Backpack:FindFirstChild(fruitName)
-    if fruit then
-        LocalPlayer.Character.Humanoid:EquipTool(fruit)
-        wait(1) -- Đợi một chút cho hành động trang bị
-    end
-    
-    -- Lưu trữ trái vào kho
-    local success, response = pcall(function()
-        return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
-    end)
-    
-    if success then
-        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
-    else
-        StatusLabel.Text = "❌ Lỗi khi lưu trữ trái!"
-    end
+    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
 end
 
--- 🌐 **Tự động Server Hop với bộ đếm 5 giây (không có khu vực)**
+-- 🌐 **Tự động Server Hop với bộ đếm 5 giây**
 local function ServerHopWithCountdown()
     for i = 5, 1, -1 do
         StatusLabel.Text = "🔄 Chuyển server sau " .. i .. " giây..."
@@ -155,6 +140,9 @@ local function ServerHopWithCountdown()
             StatusLabel.Text = "🔁 Đã chuyển đến server mới!"
         else
             StatusLabel.Text = "❌ Lỗi khi teleport đến server!"
+            -- Thử lại sau khi có lỗi
+            wait(3)
+            ServerHopWithCountdown()  -- Gọi lại hàm để thử teleport lại
         end
     else
         StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
@@ -170,11 +158,25 @@ while true do
         wait(1)
 
         -- 🏆 Nhặt trái & lưu vào kho
-        LocalPlayer.Character.Humanoid:EquipTool(fruit)  -- Trang bị trái
+        LocalPlayer.Character.Humanoid:EquipTool(fruit)
         wait(1)
+        
+        -- Đợi cho đến khi trái được lưu thành công
+        local successStore = false
+        local tryCount = 0
+        while not successStore and tryCount < 5 do
+            successStore = pcall(function()
+                StoreFruit(fruit.Name)
+            end)
+            tryCount = tryCount + 1
+            wait(2) -- Chờ một khoảng thời gian ngắn trước khi thử lại
+        end
 
-        -- Lưu trái vào kho sau khi trang bị
-        StoreFruit(fruit.Name)  -- Lưu trái vào kho sau khi trang bị
+        if successStore then
+            StatusLabel.Text = "✅ Lưu trữ trái thành công!"
+        else
+            StatusLabel.Text = "❌ Không thể lưu trữ trái!"
+        end
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
         ServerHopWithCountdown()
