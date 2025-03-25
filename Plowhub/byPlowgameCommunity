@@ -21,18 +21,7 @@ if game.PlaceId == 2753915549 or game.PlaceId == 4442272183 or game.PlaceId == 7
     ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
 end
 
--- Hàm để chuyển đến server khác (không phải server hop)
-local function SwitchServer()
-    -- Đặt lại PlaceId nếu cần (thông thường là PlaceId của game bạn muốn chuyển đến)
-    local placeId = game.PlaceId
-
-    -- Chuyển đến server khác sử dụng TeleportService (không dùng Server Hop)
-    -- Có thể đổi server bất kỳ mà không cần phải lọc server ít người chơi.
-    TeleportService:Teleport(placeId, LocalPlayer)
-    print("Đang chuyển đến server mới...")
-end
-
--- Hàm hiển thị UI thông báo
+-- Hàm hiển thị UI thông báo với hiệu ứng mở từ dưới lên
 local function CreateUI()
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "PlowHubUI"
@@ -40,12 +29,13 @@ local function CreateUI()
 
     local Frame = Instance.new("Frame", screenGui)
     Frame.Size = UDim2.new(0, 320, 0, 200)
-    Frame.Position = UDim2.new(0.5, -160, 0.05, 0)
+    Frame.Position = UDim2.new(0.5, -160, 1, 0)  -- Ban đầu đặt ở dưới cùng của màn hình
     Frame.BackgroundColor3 = Color3.new(0, 0, 0)
     Frame.BackgroundTransparency = 0.3
     Frame.BorderSizePixel = 2
     Frame.BorderRadius = UDim.new(0, 16)  -- Bo tròn góc
 
+    -- Tiêu đề
     local Title = Instance.new("TextLabel", Frame)
     Title.Size = UDim2.new(1, 0, 0.2, 0)
     Title.Text = "🌐 Plow Game | Community"
@@ -53,11 +43,37 @@ local function CreateUI()
     Title.TextColor3 = Color3.new(1, 1, 1)
     Title.BackgroundTransparency = 1
 
-    return Frame
+    -- Trạng thái lưu trữ trái
+    local StatusLabel = Instance.new("TextLabel", Frame)
+    StatusLabel.Size = UDim2.new(1, 0, 0.3, 0)
+    StatusLabel.Position = UDim2.new(0, 0, 0.2, 0)
+    StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
+    StatusLabel.TextScaled = true
+    StatusLabel.TextColor3 = Color3.new(1, 1, 1)
+    StatusLabel.BackgroundTransparency = 1
+
+    -- Bộ đếm thời gian chuyển server
+    local TimerLabel = Instance.new("TextLabel", Frame)
+    TimerLabel.Size = UDim2.new(1, 0, 0.15, 0)
+    TimerLabel.Position = UDim2.new(0, 0, 0.55, 0)
+    TimerLabel.Text = "⏳ Chuyển server sau: 5s"
+    TimerLabel.TextScaled = true
+    TimerLabel.TextColor3 = Color3.new(0, 1, 0)
+    TimerLabel.BackgroundTransparency = 1
+
+    -- Tween để tạo hiệu ứng mở UI từ dưới lên
+    local tweenService = game:GetService("TweenService")
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    local goal = { Position = UDim2.new(0.5, -160, 0.05, 0) }
+
+    local tween = tweenService:Create(Frame, tweenInfo, goal)
+    tween:Play()
+
+    return StatusLabel, TimerLabel
 end
 
 -- Khởi tạo UI
-local frame = CreateUI()
+local StatusLabel, TimerLabel = CreateUI()
 
 -- Hàm tìm trái ác quỷ
 local function FindFruit()
@@ -78,9 +94,11 @@ local function StoreFruit(fruit)
 
     -- Kiểm tra nếu lưu thành công
     if success then
+        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruit.Name .. " vào kho!"
         print("Trái " .. fruit.Name .. " đã được lưu trữ vào kho!")
         return true
     else
+        StatusLabel.Text = "❌ Lỗi khi lưu trữ trái: " .. message
         print("Lỗi khi lưu trữ trái: " .. message)
         return false
     end
@@ -120,13 +138,24 @@ local function StartServerSwitch()
                 local success = CheckFruitInStorage(fruit.Name)
                 if success then
                     print("Trái " .. fruit.Name .. " đã được lưu vào kho thành công!")
+                    StatusLabel.Text = "✅ Trái " .. fruit.Name .. " đã lưu vào kho!"
                 else
                     print("Trái " .. fruit.Name .. " không thể lưu trữ vào kho!")
+                    StatusLabel.Text = "❌ Lỗi lưu trái " .. fruit.Name
                 end
             end
         else
             -- Nếu không có trái, thực hiện chuyển server
-            SwitchServer()
+            local countdown = 5
+            for i = countdown, 1, -1 do
+                TimerLabel.Text = "⏳ Chuyển server sau: " .. i .. "s"
+                wait(1)
+            end
+            -- Sau đếm ngược, thực hiện chuyển server
+            StatusLabel.Text = "🔄 Đang chuyển server..."
+            TimerLabel.Text = "⏳ Đang chuyển server..."
+            -- Dùng TeleportService để chuyển server
+            TeleportService:Teleport(game.PlaceId, LocalPlayer)
         end
         wait(5) -- Chờ 5 giây trước khi kiểm tra lại
     end
