@@ -1,3 +1,5 @@
+repeat wait() until game:IsLoaded()
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
@@ -6,7 +8,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄⛳️ Chặn AFK
+-- 🔄 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -27,7 +29,7 @@ local function CreateUI()
     screenGui.Parent = game.Players.LocalPlayer:FindFirstChild("PlayerGui") or game.CoreGui
 
     local Frame = Instance.new("Frame", screenGui)
-    Frame.Size = UDim2.new(0, 320, 0, 160)
+    Frame.Size = UDim2.new(0, 320, 0, 200)
     Frame.Position = UDim2.new(0.5, -160, 0.05, 0)
     Frame.BackgroundColor3 = Color3.new(0, 0, 0)
     Frame.BackgroundTransparency = 0.3
@@ -55,26 +57,20 @@ local function CreateUI()
     StatusLabel.BackgroundTransparency = 1
     StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
 
-    -- 🎯 FPS Counter
-    local FpsLabel = Instance.new("TextLabel", Frame)
-    FpsLabel.Size = UDim2.new(1, 0, 0.15, 0)
-    FpsLabel.Position = UDim2.new(0, 0, 0.75, 0)
-    FpsLabel.TextSize = 16
-    FpsLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-    FpsLabel.BackgroundTransparency = 1
-    FpsLabel.Text = "FPS: 60"
+    -- 🎯 Đếm ngược thời gian
+    local CountdownLabel = Instance.new("TextLabel", Frame)
+    CountdownLabel.Size = UDim2.new(1, 0, 0.15, 0)
+    CountdownLabel.Position = UDim2.new(0, 0, 0.75, 0)
+    CountdownLabel.TextSize = 16
+    CountdownLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    CountdownLabel.BackgroundTransparency = 1
+    CountdownLabel.Text = "⏳ Chuyển server trong: 5 giây"
 
-    -- 🎯 Cập nhật FPS theo thời gian thực
-    RunService.RenderStepped:Connect(function()
-        local fps = math.floor(1 / RunService.RenderStepped:Wait())
-        FpsLabel.Text = "FPS: " .. fps
-    end)
-
-    return StatusLabel
+    return StatusLabel, CountdownLabel
 end
 
 -- 📌 Khởi tạo UI
-local StatusLabel = CreateUI()
+local StatusLabel, CountdownLabel = CreateUI()
 
 -- 🔍 Tìm trái ác quỷ nhanh hơn
 local function FindFruits()
@@ -94,66 +90,38 @@ local function TeleportToPosition(position)
 end
 
 -- ✅ Lưu trữ trái vào kho
-local function StoreFruit(fruitName)
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
-    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+local function StoreFruit(fruit)
+    -- Kiểm tra xem nhân vật có cầm trái ác quỷ không
+    if fruit then
+        -- Lưu trữ trái vào kho
+        local fruitName = fruit.Name
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+
+        -- Cập nhật trạng thái UI sau khi lưu trái
+        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. " vào kho!"
+    else
+        -- Nếu không có trái, cập nhật UI
+        StatusLabel.Text = "❌ Không có trái để lưu!"
+    end
 end
 
--- 🌐 **Tự động Server Hop siêu tốc**
+-- 🌐 **Tự động Server Hop với bộ đếm 5 giây**
 local function ServerHopWithCountdown()
-    -- Đếm ngược 5 giây
     for i = 5, 1, -1 do
+        CountdownLabel.Text = "⏳ Chuyển server trong: " .. i .. " giây"
         wait(1)
     end
-
-    -- API để lấy danh sách các server
-    local success, servers = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100"))
-    end)
-
-    -- Kiểm tra nếu việc lấy server thành công
-    if not success or not servers or not servers.data then
-        StatusLabel.Text = "❌ Không thể lấy danh sách server!"
-        return
-    end
-
-    local foundServer = false
-    local bestServer = nil
-
-    -- Lọc các server có ít người chơi và chọn server tốt nhất
-    for _, server in ipairs(servers.data) do
-        -- Kiểm tra xem server có thông tin hợp lệ không
-        if server.playing and server.maxPlayers and server.id then
-            -- Nếu số người chơi ít hơn tối đa, chọn server đó
-            if server.playing < server.maxPlayers then
-                if not bestServer or server.playing < bestServer.playing then
-                    bestServer = server
-                end
-            end
+    CountdownLabel.Text = "🔁 Đang chuyển server..."
+    
+    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
+    for _, server in ipairs(servers) do
+        if server.playing < server.maxPlayers then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+            return
         end
     end
 
-    -- Nếu không tìm thấy server phù hợp
-    if not bestServer then
-        StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
-        return
-    end
-
-    -- Thử chuyển đến server đã chọn
-    local success, errorMsg = pcall(function()
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, bestServer.id, LocalPlayer)
-    end)
-
-    if success then
-        foundServer = true
-    else
-        StatusLabel.Text = "❌ Lỗi khi chuyển server: " .. errorMsg
-    end
-
-    -- Nếu không thành công, hiển thị thông báo lỗi
-    if not foundServer then
-        StatusLabel.Text = "❌ Không thể chuyển đến server."
-    end
+    StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
 end
 
 -- 🔁 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
@@ -164,10 +132,10 @@ while true do
         TeleportToPosition(fruit.Handle.CFrame)
         wait(1)
 
-        -- 🏆 Nhặt trái & lưu vào kho
-        LocalPlayer.Character.Humanoid:EquipTool(fruit)
+        -- 🏆 Nhặt trái và lưu vào kho
+        LocalPlayer.Character.Humanoid:EquipTool(fruit)  -- Nhặt trái
         wait(1)
-        StoreFruit(fruit.Name)
+        StoreFruit(fruit)  -- Lưu vào kho
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
         ServerHopWithCountdown()
