@@ -1,4 +1,4 @@
--- 🔄🌽 Chặn AFK
+-- 🔄 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -87,8 +87,17 @@ end
 
 -- ✅ Lưu trữ trái vào kho
 local function StoreFruit(fruitName)
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
-    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+    -- Đảm bảo gọi đúng Remote để lưu trữ trái vào kho
+    local success, errorMsg = pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+    end)
+
+    if success then
+        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+    else
+        StatusLabel.Text = "❌ Lỗi khi lưu trữ trái " .. fruitName .. "!"
+        warn("Lỗi lưu trữ trái: " .. errorMsg)
+    end
 end
 
 -- 🌐 **Tự động Server Hop với bộ đếm 5 giây**
@@ -99,44 +108,15 @@ local function ServerHopWithCountdown()
     end
     StatusLabel.Text = "🔁 Đang chuyển server..."
     
-    -- Lấy danh sách server từ API (Sử dụng URL API chính xác)
-    local success, serversData = pcall(function()
-        return game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")
-    end)
-
-    if not success then
-        StatusLabel.Text = "❌ Không thể lấy danh sách server!"
-        return
-    end
-
-    local servers = HttpService:JSONDecode(serversData).data
-    local selectedServer = nil
-    
-    -- Chọn server có ít người chơi nhất và còn chỗ trống
+    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
     for _, server in ipairs(servers) do
         if server.playing < server.maxPlayers then
-            selectedServer = server
-            break
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+            return
         end
     end
 
-    if selectedServer then
-        -- Thực hiện teleport sang server đã chọn
-        local successTeleport = pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, selectedServer.id, LocalPlayer)
-        end)
-
-        if successTeleport then
-            StatusLabel.Text = "🔁 Đã chuyển đến server mới!"
-        else
-            StatusLabel.Text = "❌ Lỗi khi teleport đến server!"
-            -- Thử lại sau khi có lỗi
-            wait(3)
-            ServerHopWithCountdown()  -- Gọi lại hàm để thử teleport lại
-        end
-    else
-        StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
-    end
+    StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
 end
 
 -- 🔁 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
@@ -147,9 +127,11 @@ while true do
         TeleportToPosition(fruit.Handle.CFrame)
         wait(1)
 
-        -- 🏆 Nhặt trái & lưu vào kho
+        -- 🏆 Nhặt trái và trang bị cho nhân vật
         LocalPlayer.Character.Humanoid:EquipTool(fruit)
         wait(1)
+
+        -- Sau khi trang bị trái, gọi hàm lưu trữ
         StoreFruit(fruit.Name)
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
