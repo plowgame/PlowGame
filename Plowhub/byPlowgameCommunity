@@ -14,7 +14,7 @@ local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
 
--- 🔄🎾 Chặn AFK (có thể không cần thiết cho KRNL PE, nhưng đảm bảo rằng nó chạy tốt)
+-- 🔄🏋🏻‍♀️ Chặn AFK
 LocalPlayer.Idled:Connect(function()
     if isKRNL then
         VirtualUser:CaptureController()
@@ -170,7 +170,7 @@ local function ServerHopWithImprovedLogic()
     StatusLabel.Text = "❌ Không thể tìm thấy server sau " .. maxAttempts .. " lần thử!"
 end
 
--- 🌐 **Tự động tham gia server thông thường**
+-- 🌐 **Tự động tham gia server công khai**
 local function AutoJoinServer()
     StatusLabel.Text = "🔄 Tìm server công khai để tham gia..."
     
@@ -192,30 +192,4 @@ local function AutoJoinServer()
     end
 end
 
--- 🔁 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
-while true do
-    local fruit = FindFruits()
-    if fruit then
-        StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ!"
-        TeleportToPosition(fruit.Handle.CFrame)
-        wait(1)
-
-        -- 🏆 Nhặt trái & lưu vào kho
-        LocalPlayer.Character.Humanoid:EquipTool(fruit)
-        wait(1)
-        StoreFruit(fruit.Name)  -- Lưu trữ trái vào kho sau khi nhặt
-    else
-        StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
-        -- Đợi 5 giây trước khi tự động server hop
-        for i = 5, 1, -1 do
-            StatusLabel.Text = "🔄 Chuyển server sau " .. i .. " giây..."
-            wait(1)
-        end
-
-        -- Sau khi đếm 5 giây, thực hiện server hop hoặc tham gia server công khai
-        ServerHopWithImprovedLogic()
-        AutoJoinServer()  -- Thêm chức năng tham gia server công khai khi không tìm thấy trái
-    end
-
-    wait(5) -- ⏳ Chờ 5 giây trước khi kiểm tra tiếp
-end
+-- 🔁 **Tìm & nhặt trái, sau đó tự động
