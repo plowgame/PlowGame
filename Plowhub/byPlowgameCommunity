@@ -8,7 +8,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🔄🥭 Chặn AFK
+-- 🔄🍑 Chặn AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new())
@@ -95,58 +95,53 @@ local function TeleportToPosition(position)
     end
 end
 
--- ✅ Lưu trữ trái vào kho
+-- ✅ Lưu trữ trái vào kho và kiểm tra thành công
 local function StoreFruit(fruitName)
-    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
-    StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+    -- Cầm trái lên bằng cách trang bị vào tay
+    local fruit = LocalPlayer.Backpack:FindFirstChild(fruitName)
+    if fruit then
+        LocalPlayer.Character.Humanoid:EquipTool(fruit)
+        wait(1) -- Đợi một chút cho hành động trang bị
+    end
+    
+    -- Lưu trữ trái vào kho
+    local success, response = pcall(function()
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+    end)
+    
+    if success then
+        StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
+    else
+        StatusLabel.Text = "❌ Lỗi khi lưu trữ trái!"
+    end
 end
 
--- 🌐 **Tự động Server Hop với bộ đếm 5 giây**
+-- 🌐 **Tự động Server Hop với bộ đếm 5 giây và chọn server Singapore**
 local function ServerHopWithCountdown()
-    -- Đếm ngược trước khi chuyển server
     for i = 5, 1, -1 do
         StatusLabel.Text = "🔄 Chuyển server sau " .. i .. " giây..."
-        task.wait(1)
+        wait(1)
     end
     StatusLabel.Text = "🔁 Đang chuyển server..."
     
-    -- Lấy danh sách server từ API với pcall để bảo vệ lỗi
-    local success, response = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100"))
-    end)
-
-    -- Kiểm tra xem có lỗi khi gọi API không
-    if not success then
-        StatusLabel.Text = "❌ Lỗi khi lấy thông tin server!"
-        return
-    end
-
-    -- Kiểm tra nếu không có dữ liệu server
-    if not response or not response.data or #response.data == 0 then
-        StatusLabel.Text = "❌ Không có server nào!"
-        return
-    end
-
-    -- Tìm server có ít người chơi và chuyển đến đó
-    for _, server in ipairs(response.data) do
-        if server.playing < server.maxPlayers then
-            local success, errorMessage = pcall(function()
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
-            end)
-
-            -- Kiểm tra kết quả gọi TeleportService
-            if success then
-                StatusLabel.Text = "🔁 Đang chuyển đến server..."
-                return
-            else
-                StatusLabel.Text = "❌ Lỗi khi chuyển server: " .. errorMessage
-                return
-            end
+    -- Lấy danh sách server từ API
+    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/2753915549/servers/Public?sortOrder=Asc&limit=100")).data
+    local singaporeServer = nil
+    
+    -- Tìm server ở Singapore
+    for _, server in ipairs(servers) do
+        if server.playing < server.maxPlayers and server.region == "SG" then  -- "SG" là mã vùng cho Singapore
+            singaporeServer = server
+            break
         end
     end
 
-    -- Nếu không tìm thấy server phù hợp
-    StatusLabel.Text = "❌ Không tìm thấy server phù hợp!"
+    if singaporeServer then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, singaporeServer.id, LocalPlayer)
+        StatusLabel.Text = "🔁 Đã chuyển đến server Singapore!"
+    else
+        StatusLabel.Text = "❌ Không tìm thấy server Singapore phù hợp!"
+    end
 end
 
 -- 🔁 **Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược**
@@ -158,9 +153,9 @@ while true do
         wait(1)
 
         -- 🏆 Nhặt trái & lưu vào kho
-        LocalPlayer.Character.Humanoid:EquipTool(fruit)
+        LocalPlayer.Character.Humanoid:EquipTool(fruit)  -- Trang bị trái
         wait(1)
-        StoreFruit(fruit.Name)
+        StoreFruit(fruit.Name)  -- Lưu trái vào kho sau khi trang bị
     else
         StatusLabel.Text = "❌ Không có trái! Chuẩn bị chuyển server..."
         ServerHopWithCountdown()
