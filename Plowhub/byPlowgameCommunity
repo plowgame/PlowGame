@@ -9,7 +9,7 @@ local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
--- 🥭Kiểm tra xem có phải là KRNL PE hay không
+-- Kiểm tra xem có phải là KRNL PE hay không
 local isKRNL = pcall(function()
     return game:GetService("CoreGui"):FindFirstChild("KRNL") -- Kiểm tra xem có đối tượng KRNL trong CoreGui
 end)
@@ -31,7 +31,7 @@ local function JoinPirateTeam()
     if not success then
         print("Error when invoking SetTeam:", err)
     end
-    wait(1)
+    wait(2)  -- Đảm bảo đã vào Hải Tặc trước khi tiếp tục
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("TeleportToSpawn")
     end)
@@ -44,12 +44,12 @@ local function CreateUI()
     screenGui.Parent = game.Players.LocalPlayer:FindFirstChild("PlayerGui") or game.CoreGui
 
     local Frame = Instance.new("Frame", screenGui)
-    Frame.Size = UDim2.new(0, 320, 0, 200)  -- Tăng chiều cao một chút
+    Frame.Size = UDim2.new(0, 320, 0, 200)
     Frame.Position = UDim2.new(0.5, -160, 0.05, 0)
     Frame.BackgroundColor3 = Color3.new(0, 0, 0)
     Frame.BackgroundTransparency = 0.3
     Frame.BorderSizePixel = 2
-    Frame.ClipsDescendants = true  -- Đảm bảo nội dung không vượt ra ngoài Frame
+    Frame.ClipsDescendants = true
 
     -- Tiêu đề UI
     local Title = Instance.new("TextLabel", Frame)
@@ -72,7 +72,7 @@ local function CreateUI()
     StatusLabel.TextSize = 18
     StatusLabel.TextColor3 = Color3.new(1, 1, 1)
     StatusLabel.BackgroundTransparency = 1
-    StatusLabel.TextWrapped = true  -- Bật tính năng tự động xuống dòng
+    StatusLabel.TextWrapped = true
     StatusLabel.Text = "🔎 Đang kiểm tra trái ác quỷ..."
 
     -- FPS Counter
@@ -105,13 +105,6 @@ end
 -- Khởi tạo UI
 local StatusLabel, TimerLabel = CreateUI()
 
--- Dịch chuyển đến trái
-local function TeleportToPosition(position)
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = position
-    end
-end
-
 -- Tìm & nhặt trái
 local function FindFruits()
     for _, fruit in pairs(game.Workspace:GetChildren()) do
@@ -127,9 +120,8 @@ local function StoreFruit(fruitName)
     local success, message = pcall(function()
         return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
     end)
-    
+
     if success then
-        -- Kiểm tra trái đã lưu vào kho chưa
         local isStored = IsFruitStored(fruitName)
         if isStored then
             StatusLabel.Text = "✅ Đã lưu trữ trái " .. fruitName .. "!"
@@ -144,7 +136,7 @@ end
 -- Kiểm tra trái ác quỷ đã lưu vào rương chưa
 local function IsFruitStored(fruitName)
     local success, result = pcall(function()
-        return ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStoredFruits") -- Hàm giả định lấy danh sách trái đã lưu
+        return ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStoredFruits") 
     end)
 
     if success then
@@ -154,7 +146,6 @@ local function IsFruitStored(fruitName)
             end
         end
     end
-
     return false
 end
 
@@ -173,7 +164,7 @@ local function ServerHopWithCountdown()
     local serverIds = {
         1793, 3900, 2570, 9370, 5866, 7745, 3469, 2400, 8693, 4312, 3629, 1990, 7247, 2173, 1767, 7306, 6740, 1085, 8357
     }
-    local randomServerId = serverIds[math.random(1, #serverIds)] -- Chọn server ngẫu nhiên từ danh sách
+    local randomServerId = serverIds[math.random(1, #serverIds)] 
     local success, err = pcall(function()
         TeleportService:Teleport(randomServerId, LocalPlayer)
     end)
@@ -186,13 +177,20 @@ end
 
 -- Tìm & nhặt trái, sau đó tự động Server Hop với đếm ngược
 while true do
-    -- Tự động vào hải tặc khi vào game
-    if game.PlaceId == 2753915549 then
-        JoinPirateTeam()
-        wait(5) -- Đợi một chút để chắc chắn đã vào hải tặc
-
+    -- Kiểm tra nếu đã vào hải tặc rồi
+    if game.PlaceId == 2753915549 and not LocalPlayer.Team or LocalPlayer.Team.Name ~= "Pirates" then
+        JoinPirateTeam()  -- Join Hải Tặc nếu chưa
     end
 
     local fruit = FindFruits()
     if fruit then
-        Status
+        StatusLabel.Text = "🍏 Đã tìm thấy trái ác quỷ!"
+        TeleportToPosition(fruit.Handle.CFrame)
+        wait(1)
+
+        -- Nhặt trái & lưu vào kho
+        StoreFruit(fruit.Name)
+        StartCountdown()
+
+        -- Sau khi lưu xong, kiểm tra và chuyển server nếu cần
+        ServerHopWithCountdown
